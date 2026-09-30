@@ -23,7 +23,8 @@ module rshark_video (
     input  logic         bg1_pri,
     input  logic         flip,              // control byte bit 0 (MAME flip_screen)
 
-    // palette CPU write port
+    // palette CPU write port (shadow palette; copied to the display palette at vblank_evt)
+    input  logic         vblank_evt,        // line 248 (with the sprite copy and register latch)
     input  logic   [1:0] pal_we,
     input  logic  [10:0] pal_addr,
     input  logic  [15:0] pal_wdata,
@@ -124,13 +125,34 @@ module rshark_video (
     endgenerate
 
     // ------------------------------------------------------------------ palette
+    // The games write the palette in their IRQ6 handler (lines 120-131, like the tilemap
+    // registers). As with the registers, the displayed palette is latched at line 248: CPU writes
+    // go to a shadow RAM that is copied (2048 clocks, inside vblank) to the display RAM. Every
+    // displayed frame therefore uses one palette, as MAME renders it (docs/VIDEO.md).
     logic [10:0] pal_raddr;
-    logic [15:0] pal_q;
-    logic [7:0]  pal_hi_q, pal_lo_q;
+    logic [15:0] pal_q, shadow_q;
+    logic [7:0]  pal_hi_q, pal_lo_q, sh_hi_q, sh_lo_q;
+    logic [11:0] pcopy = 12'd2048;      // 0..2047 copying, 2048 idle
+    logic        pcopy_v;
+    logic [10:0] pcopy_a;
+    always_ff @(posedge clk) begin
+        pcopy_v <= 1'b0;
+        if (rst) pcopy <= 12'd2048;
+        else if (vblank_evt) pcopy <= 12'd0;
+        else if (!pcopy[11]) begin
+            pcopy   <= pcopy + 12'd1;
+            pcopy_v <= 1'b1;
+            pcopy_a <= pcopy[10:0];
+        end
+    end
+    rshark_sdpram #(.AW(11), .DW(8)) sh_hi (
+        .clk(clk), .w_addr(pal_addr), .we(pal_we[1]), .din(pal_wdata[15:8]), .r_addr(pcopy[10:0]), .dout(sh_hi_q));
+    rshark_sdpram #(.AW(11), .DW(8)) sh_lo (
+        .clk(clk), .w_addr(pal_addr), .we(pal_we[0]), .din(pal_wdata[7:0]), .r_addr(pcopy[10:0]), .dout(sh_lo_q));
     rshark_sdpram #(.AW(11), .DW(8)) pal_hi (
-        .clk(clk), .w_addr(pal_addr), .we(pal_we[1]), .din(pal_wdata[15:8]), .r_addr(pal_raddr), .dout(pal_hi_q));
+        .clk(clk), .w_addr(pcopy_a), .we(pcopy_v), .din(sh_hi_q), .r_addr(pal_raddr), .dout(pal_hi_q));
     rshark_sdpram #(.AW(11), .DW(8)) pal_lo (
-        .clk(clk), .w_addr(pal_addr), .we(pal_we[0]), .din(pal_wdata[7:0]), .r_addr(pal_raddr), .dout(pal_lo_q));
+        .clk(clk), .w_addr(pcopy_a), .we(pcopy_v), .din(sh_lo_q), .r_addr(pal_raddr), .dout(pal_lo_q));
     assign pal_q = {pal_hi_q, pal_lo_q};
 
     // ------------------------------------------------------------------ output pipeline

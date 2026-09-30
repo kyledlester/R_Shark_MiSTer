@@ -79,7 +79,12 @@ handler. MAME samples everything at line 248, which a raster cannot do. The FPGA
 
 * latches the 32 tilemap registers at the start of line 248 (with the sprite-buffer copy), so the
   whole displayed frame uses one consistent set, together with the sprites of the same game tick;
-* keeps the control byte and the palette live (both are written either in vblank or rarely).
+* latches the palette at line 248 too: CPU writes go to a shadow palette that is copied (2048
+  clocks, inside vblank) to the display palette. Super-X rewrites 233 palette entries every other
+  frame in some scenes, in the same IRQ6 window as the registers (lines 120-131); a live palette
+  would show a torn band at line ~125 on those frames. (R-Shark ran on hardware with a live palette
+  before this change; its palette writes are far rarer.)
+* keeps the control byte live (written in vblank).
 
 Relative to MAME the tilemaps and palette therefore appear one frame later in relation to the
 sprites (MAME shows scroll of tick T with sprites of tick T-1; the FPGA shows both of tick T one

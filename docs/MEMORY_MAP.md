@@ -34,6 +34,26 @@ Interrupts (autovectored, `HOLD_LINE`: pending until the 68000 acknowledges that
 | 5 | start of line 248 ("vblank-out") | 0x0858 | control byte, C0018/C001A |
 | 6 | start of line 120 ("timer?") | 0x08CA | tilemap registers, palette, sound latch |
 
+## Super-X (MAME `superx_map`)
+
+Same board, same devices and offsets; only the RAM block and the I/O + video block move, and the
+program is at the same place. Global mask 0xFFFFF as for R-Shark (reset SSP 0x000DD000).
+
+| R-Shark | Super-X | Function |
+| --- | --- | --- |
+| 00000-3FFFF | 00000-3FFFF | program ROM |
+| 40000-4FFFF | D0000-DFFFF | work RAM (sprite RAM at +D000) |
+| C0000-C0FFF | 80000-80FFF | DSW / inputs / sound latch / control / 0x18,0x1A writes |
+| C4000-C401F | 84000-8401F | BG0 / BG1 registers |
+| C8000-C8FFF | 88000-88FFF | palette |
+| CC000-CC01F | 8C000-8C01F | FG0 / FG1 registers |
+
+FPGA (rshark_main.sv): with `superx` set, the top address nibble is translated to R-Shark's (D -> 4,
+8 -> C) before the shared decoder, and R-Shark's own blocks (4, C) become unmapped; everything else
+(unmapped reads 0, e.g. Super-X's boot-time accesses to 0xE0000-0xEFFFF and 0x9xxxx) is unchanged.
+`superx` comes from the MRA's ioctl index-1 byte (00 = R-Shark, 01 = Super-X), latched by
+rshark_core.sv while the board is held in reset for the download.
+
 ## Z80 (4 MHz)
 
 | Address | R/W | Function |

@@ -19,10 +19,13 @@ module m15_system_tb;
     logic ce_pix; logic [23:0] rgb; logic hb, vb, hs, vs;
     logic signed [15:0] snd;
     logic ioctl_wait;
+    logic ioctl_download = 0, ioctl_wr = 0;
+    logic [15:0] ioctl_index = 0, ioctl_dout = 0;
+    string sdram_img;
 
     rshark_core dut (
         .clk(clk), .clk_snd(clk_snd), .init(init), .reset(reset), .pause(1'b0),
-        .ioctl_download(1'b0), .ioctl_index(16'd0), .ioctl_wr(1'b0), .ioctl_addr('0), .ioctl_dout('0),
+        .ioctl_download(ioctl_download), .ioctl_index(ioctl_index), .ioctl_wr(ioctl_wr), .ioctl_addr('0), .ioctl_dout(ioctl_dout),
         .ioctl_wait(ioctl_wait),
         .sd_addr(sd_addr), .sd_din(sd_din), .sd_be(sd_be), .sd_req(sd_req), .sd_rnw(sd_rnw),
         .sd_dout(sd_dout), .sd_ready(sd_ready),
@@ -49,11 +52,18 @@ module m15_system_tb;
         void'($value$plusargs("FRAMES=%d", max_frames));
         void'($value$plusargs("DUMPA=%d", dump_a));
         void'($value$plusargs("DUMPB=%d", dump_b));
-        chip.preload("local/sim/sdram_be.bin");
+        if (!$value$plusargs("SDRAM=%s", sdram_img)) sdram_img = "local/sim/sdram_be.bin";
+        chip.preload(sdram_img);
         lfd = $fopen("build/sim/latch.txt", "w");
         // MAME's CPU/raster phase (see m3_boot_tb): CPU released 65 clocks before the raster.
         // The SDRAM controller starts with the raster (init) and is ready long before line 8.
         repeat (8) @(posedge clk);
+        // game select exactly as the MRA sends it: ioctl index 1, one byte (+SUPERX -> 01)
+        @(posedge clk); ioctl_download <= 1; ioctl_index <= 16'd1;
+        ioctl_dout <= $test$plusargs("SUPERX") ? 16'h0001 : 16'h0000; ioctl_wr <= 1;
+        @(posedge clk); ioctl_wr <= 0;
+        @(posedge clk); ioctl_download <= 0;
+        $display("game select: superx=%0d", dut.superx);
         reset <= 0;
         repeat (65) @(posedge clk);
         init <= 0;

@@ -8,7 +8,8 @@ local stop = tonumber(os.getenv("RS_SECONDS") or "4")
 local function t() return m.time:as_double() * 1e6 end
 local msp = m.devices[":maincpu"].spaces["program"]
 local zsp = m.devices[":audiocpu"].spaces["program"]
-t1 = msp:install_write_tap(0x0c0012, 0x0c0013, "lat", function(o, d, mk)
+local iob = m.system.name:sub(1, 6) == "superx" and 0x080000 or 0x0c0000
+t1 = msp:install_write_tap(iob + 0x12, iob + 0x13, "lat", function(o, d, mk)
   if (mk & 0xff) ~= 0 then out:write(string.format("M %.3f %02x\n", t(), d & 0xff)) end end)
 t2 = zsp:install_read_tap(0xf800, 0xf80f, "zr", function(o, d, mk)
   out:write(string.format("Z %.3f R %04x %02x\n", t(), o, d & 0xff)) end)

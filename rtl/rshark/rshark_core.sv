@@ -61,6 +61,14 @@ module rshark_core (
     wire irq5_evt = line_start && vcount == 8'd248 && !pause;
     wire irq6_evt = line_start && vcount == 8'd120 && !pause;
 
+    // ------------------------------------------------------------------ game select (index 1)
+    // One byte sent by the MRA before the ROM stream: 00 = R-Shark, 01 = Super-X. Both MRAs send it,
+    // so the selection is always established at load time; the board is held in reset meanwhile.
+    logic superx = 1'b0;
+    always_ff @(posedge clk)
+        if (ioctl_download && ioctl_wr && ioctl_index == 16'd1 && ioctl_addr[26:1] == 0)
+            superx <= ioctl_dout[0];
+
     // ------------------------------------------------------------------ DIP switches (index 254)
     logic [15:0] dsw = 16'hFFFF;
     always_ff @(posedge clk)
@@ -104,7 +112,7 @@ module rshark_core (
     logic [23:0]  dbg_pc;
     logic [15:0]  dbg_irq5, dbg_irq6, dbg_frames, dbg_latch;
     rshark_main main (
-        .clk(clk), .reset(reset), .phi1(phi1), .phi2(phi2),
+        .clk(clk), .reset(reset), .superx(superx), .phi1(phi1), .phi2(phi2),
         .rom_we(rom68_we), .rom_waddr(rom68_addr), .rom_wdata(rom68_data),
         .irq5_evt(irq5_evt), .irq6_evt(irq6_evt), .vblank_evt(irq5_evt),
         .dsw(dsw), .p1p2(p1p2), .system(system),
@@ -126,7 +134,7 @@ module rshark_core (
         .clk(clk), .rst(reset), .ce_pix(ce_pix), .hcount(hcount), .vcount(vcount), .line_start(line_start),
         .hblank_in(hb), .vblank_in(vb), .hsync_in(hs), .vsync_in(vs),
         .regs(tm_regs), .bg1_pri(bg1_pri), .flip(flip),
-        .pal_we(pal_we), .pal_addr(pal_addr), .pal_wdata(pal_wdata),
+        .vblank_evt(irq5_evt), .pal_we(pal_we), .pal_addr(pal_addr), .pal_wdata(pal_wdata),
         .ytab_addr(ytab_addr), .ytab_data(ytab_data), .atab_addr(atab_addr), .atab_data(atab_data),
         .tm_req(tm_req), .tm_addr(tm_addr), .tm_ack(tm_ack),
         .sp_req(sp_req), .sp_addr(sp_addr), .sp_ack(sp_ack), .mem_data(mem_rdata),

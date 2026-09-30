@@ -5,7 +5,7 @@
 -- Per frame: pixels.bin (384x240 ARGB32 LE, MAME's rendered visible area), palette.bin (2048 BE words),
 -- sprbuf.bin (the sprite buffer MAME used = :spriteram contents at the previous frame_done, which is
 -- the vblank-begin instant of the copy), regs.txt (last byte written to every tilemap control
--- register and the main control byte), ram.bin (0x040000-0x04FFFF BE words).
+-- register and the main control byte), ram.bin (work RAM block, 64 KB BE words). Works for rshark and superx.
 -- Timing basis (src/emu/screen.cpp vblank_begin): frame_update() renders, THEN the vblank callbacks
 -- run buffered_spriteram16_device::vblank_copy_rising. frame_done fires inside frame_update.
 -- screen:pixels() returns the previously completed bitmap (MAME double-buffers screen bitmaps), so
@@ -32,8 +32,12 @@ local function reg_tap(base, slot)
     if (mask & 0x00ff) ~= 0 then regs[slot * 8 + ((off - base) >> 1)] = data & 0xff end
   end)
 end
-taps = { reg_tap(0x0c4000, 0), reg_tap(0x0c4010, 1), reg_tap(0x0cc000, 2), reg_tap(0x0cc010, 3),
-  sp:install_write_tap(0x0c0014, 0x0c0015, "ctrl", function(off, data, mask)
+-- I/O + video block: 0x0C0000 (rshark_map) or 0x080000 (superx_map); RAM: 0x040000 / 0x0D0000
+local superx = m.system.name:sub(1, 6) == "superx"
+local iob = superx and 0x080000 or 0x0c0000
+local ram = superx and 0x0d0000 or 0x040000
+taps = { reg_tap(iob + 0x4000, 0), reg_tap(iob + 0x4010, 1), reg_tap(iob + 0xc000, 2), reg_tap(iob + 0xc010, 3),
+  sp:install_write_tap(iob + 0x14, iob + 0x15, "ctrl", function(off, data, mask)
     if (mask & 0x00ff) ~= 0 then ctrl = data & 0xff end end) }
 local function share_bytes(name)
   local s = m.memory.shares[name]
@@ -61,7 +65,7 @@ emu.register_frame_done(function()
     wfile(d .. "/sprbuf.bin", prev_spr)
     wfile(d .. "/spr_live.bin", share_bytes(":spriteram"))   -- what the vblank copy takes now
     local t = {}
-    for i = 0x040000, 0x04fffe, 2 do local w = sp:read_u16(i); t[#t + 1] = string.char(w >> 8, w & 0xff) end
+    for i = ram, ram + 0xfffe, 2 do local w = sp:read_u16(i); t[#t + 1] = string.char(w >> 8, w & 0xff) end
     wfile(d .. "/ram.bin", table.concat(t))
     local f = io.open(d .. "/regs.txt", "w")
     local names = {"bg0", "bg1", "fg0", "fg1"}

@@ -10,6 +10,8 @@
 module m3_boot_tb;
     logic clk = 0;
     always #5.298 clk = ~clk;
+    logic superx = 0;
+    initial if ($test$plusargs("SUPERX")) superx = 1;
     logic reset = 1, init = 1;
 
     logic ce_pix, tick16, phi1, phi2, ce_4m, ce_1m;
@@ -27,7 +29,7 @@ module m3_boot_tb;
     logic [13:0] yd; logic [32:0] ad; logic busy;
     logic [23:0] pc; logic [15:0] n5, n6, nf, nl;
     rshark_main dut (
-        .clk(clk), .reset(reset), .phi1(phi1), .phi2(phi2),
+        .clk(clk), .reset(reset), .superx(superx), .phi1(phi1), .phi2(phi2),
         .rom_we(1'b0), .rom_waddr('0), .rom_wdata('0),
         .irq5_evt(irq5), .irq6_evt(irq6), .vblank_evt(irq5),
         .dsw(16'hFFFF), .p1p2(16'hFFFF), .system(8'hFF),

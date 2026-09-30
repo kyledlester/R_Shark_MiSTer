@@ -9,6 +9,7 @@
 module rshark_main (
     input  logic        clk,
     input  logic        reset,
+    input  logic        superx,         // 0 = R-Shark map, 1 = Super-X map (MRA game select)
     input  logic        phi1,
     input  logic        phi2,
 
@@ -78,7 +79,17 @@ module rshark_main (
         if (!dbg_native[57] && fc[1:0] == 2'b10) dbg_pc <= dbg_native[23:0];
 
     // ------------------------------------------------------------------ decode (A23-A20 ignored)
-    wire [19:0] a = cpu_addr[19:0];
+    // MAME rshark_map / superx_map differ only in where RAM and the I/O/video block sit:
+    //   R-Shark: RAM 0x40000-0x4FFFF, I/O + video 0xC0000-0xCFFFF
+    //   Super-X: RAM 0xD0000-0xDFFFF, I/O + video 0x80000-0x8FFFF (same offsets within each block)
+    // For Super-X the top address nibble is translated to R-Shark's (D -> 4, 8 -> C) and the
+    // R-Shark-only blocks (4, C) are made unmapped; the program ROM (0x00000-0x3FFFF) is shared.
+    wire [3:0] hi = cpu_addr[19:16];
+    wire [3:0] hi_n = !superx          ? hi    :
+                      hi == 4'hD       ? 4'h4  :
+                      hi == 4'h8       ? 4'hC  :
+                      (hi == 4'h4 || hi == 4'hC) ? 4'hF : hi;
+    wire [19:0] a = {hi_n, cpu_addr[15:0]};
     wire sel_rom = a[19:18] == 2'b00;
     wire sel_spr = a[19:12] == 8'h4D;
     wire sel_ram = a[19:16] == 4'h4 && !sel_spr;

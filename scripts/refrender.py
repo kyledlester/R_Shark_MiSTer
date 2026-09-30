@@ -14,7 +14,7 @@ import os, sys
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REG_DIR = os.path.join(ROOT, "local", "regions")
+REG_DIR = os.environ.get("RS_REGIONS", os.path.join(ROOT, "local", "regions"))   # RS_REGIONS=local/superx/regions for Super-X
 
 W, H = 512, 256                   # MAME raster (bitmap coordinates)
 VX0, VX1, VY0, VY1 = 64, 448, 8, 248

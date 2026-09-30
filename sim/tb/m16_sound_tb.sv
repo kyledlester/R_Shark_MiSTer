@@ -38,7 +38,11 @@ module m16_sound_tb;
 
     // OKI ROM
     logic [7:0] oki_rom [0:262143];
-    initial $readmemh("local/sim/oki.hex", oki_rom);
+    string oki_hex, strace;
+    initial begin
+        if (!$value$plusargs("OKIHEX=%s", oki_hex)) oki_hex = "local/sim/oki.hex";
+        $readmemh(oki_hex, oki_rom);
+    end
     logic [1:0] okcnt = 0;
     always_ff @(posedge clk) begin
         oki_ack <= 1'b0;
@@ -62,8 +66,9 @@ module m16_sound_tb;
         int fd, r; string kind, rw; real tt; int a, v;
         void'($value$plusargs("MS=%d", run_ms));
         void'($value$plusargs("N=%d", max_n));
-        fd = $fopen("local/traces/sound_trace.txt", "r");
-        if (fd == 0) begin $display("FAIL M16_SOUND: no local/traces/sound_trace.txt"); $finish; end
+        if (!$value$plusargs("STRACE=%s", strace)) strace = "local/traces/sound_trace.txt";
+        fd = $fopen(strace, "r");
+        if (fd == 0) begin $display("FAIL M16_SOUND: no %s", strace); $finish; end
         while (!$feof(fd)) begin
             r = $fscanf(fd, "%s", kind);
             if (r != 1) break;

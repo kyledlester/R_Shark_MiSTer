@@ -42,6 +42,12 @@ Environment variables select output (`RS_OUT`), frames (`RS_FRAMES`) and optiona
   at `frame_done(N)` are read at `frame_done(N+1)` (`capture_frames.lua` RS_PIXDELAY=1). With that,
   `scripts/refrender.py` reproduces all 60 captured attract frames (every 60th frame up to 3600)
   pixel-exactly.
+* **Palette at readout.** MAME keeps the screen as palette indices and converts them to RGB when
+  the bitmap is read out, so `pixels()` at `frame_done(N+1)` applies the palette as of N+1. Frames
+  where the palette changes between N and N+1 (Super-X flash effects) match the reference only with
+  the N+1 palette; with it, Super-X attract frames 356/358/360 are pixel-exact too.
+* The scripts detect the set (`manager.machine.system.name`) and use the Super-X addresses
+  (I/O block 0x080000, RAM 0x0D0000) when running `superx`.
 * **When the game writes** (1800 frames of attract, `io_trace.lua` / `write_hist.lua`):
   * all 32 tilemap control registers: in the IRQ6 handler, lines 123-126 (every frame);
   * palette: IRQ6 handler, lines 122-133 (and 207-218 during some fades); never read back;

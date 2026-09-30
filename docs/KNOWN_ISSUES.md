@@ -6,7 +6,8 @@ D = accuracy item that can wait.
 | # | Cat | Item | Status |
 | --- | --- | --- | --- |
 | 1 | D | PCB video timing (dot clock, totals, sync) unknown; MAME's 512x256@60 raster is used, sync placement is a CRT-friendly choice | open (M20) |
-| 2 | D | Tilemap registers latched at vblank (game writes them at line ~125); palette live. Real hardware behaviour unverified. Relative to MAME, scroll/palette appear together with the sprites of the same game tick | design decision, docs/VIDEO.md |
+| 2 | D | Tilemap registers and palette latched at vblank (the games write them at line ~120-131). Real hardware behaviour unverified. Relative to MAME, scroll/palette appear together with the sprites of the same game tick | design decision, docs/VIDEO.md |
+| 12 | D | Super-X SWA:1 is labelled "Unknown (SWA:1)" as in MAME (board documentation calls it service mode; MAME notes it has no effect) | as MAME |
 | 3 | D | Flip screen | implemented, m11 pixel-exact on flipped MAME frames |
 | 4 | D | Tilemap registers r2, r5, r7 and control bit 5 have no known function (stored, unused - as MAME) | as MAME |
 | 5 | D | 0x0C0018/0x0C001A writes (watchdog?) ignored - as MAME | as MAME |

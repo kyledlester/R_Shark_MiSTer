@@ -51,6 +51,18 @@ module m6_inputs_tb;
         @(posedge clk); ioctl_download <= 1; ioctl_index <= 16'd254; ioctl_addr <= 0; ioctl_dout <= 16'h7EF3; ioctl_wr <= 1;
         @(posedge clk); ioctl_wr <= 0; @(posedge clk); ioctl_download <= 0;
         #20; expect16("DSW after download", dut.dsw, 16'h7EF3);
+        // game select (MRA ioctl index 1): 01 = Super-X, 00 = R-Shark; other indexes leave it alone
+        expect16("power-up game", {15'd0, dut.superx}, 16'd0);
+        @(posedge clk); ioctl_download <= 1; ioctl_index <= 16'd1; ioctl_addr <= 0; ioctl_dout <= 16'h0001; ioctl_wr <= 1;
+        @(posedge clk); ioctl_wr <= 0; @(posedge clk); ioctl_download <= 0;
+        #20; expect16("select Super-X", {15'd0, dut.superx}, 16'd1);
+        expect16("main sees Super-X", {15'd0, dut.main.superx}, 16'd1);
+        @(posedge clk); ioctl_download <= 1; ioctl_index <= 16'd0; ioctl_addr <= 0; ioctl_dout <= 16'h0000; ioctl_wr <= 1;
+        @(posedge clk); ioctl_wr <= 0; @(posedge clk); ioctl_download <= 0;
+        #20; expect16("ROM download keeps selection", {15'd0, dut.superx}, 16'd1);
+        @(posedge clk); ioctl_download <= 1; ioctl_index <= 16'd1; ioctl_addr <= 0; ioctl_dout <= 16'h0000; ioctl_wr <= 1;
+        @(posedge clk); ioctl_wr <= 0; @(posedge clk); ioctl_download <= 0;
+        #20; expect16("select R-Shark", {15'd0, dut.superx}, 16'd0);
         if (errors == 0) $display("PASS M6_INPUTS: %0d checks", checks);
         else $display("FAIL M6_INPUTS: %0d/%0d checks failed", errors, checks);
         $finish;

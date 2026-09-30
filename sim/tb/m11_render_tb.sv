@@ -19,7 +19,7 @@ module m11_render_tb;
         .hcount(hc), .vcount(vc), .hblank(hb), .vblank(vb), .hsync(hs), .vsync(vs), .line_start(ls));
 
     // ------------------------------------------------------------------ frame state
-    string frame;
+    string frame, sdram_img;
     logic [255:0] regs;
     logic [7:0]   ctrl;
     logic [15:0]  palette [2048];
@@ -65,6 +65,7 @@ module m11_render_tb;
         .clk(clk), .rst(rst), .ce_pix(ce_pix), .hcount(hc), .vcount(vc), .line_start(ls),
         .hblank_in(hb), .vblank_in(vb), .hsync_in(hs), .vsync_in(vs),
         .regs(regs), .bg1_pri(ctrl[4]), .flip(ctrl[0]),
+        .vblank_evt(ls && vc == 8'd248),
         .pal_we(pal_we), .pal_addr(pal_addr), .pal_wdata(pal_wdata),
         .ytab_addr(ytab_addr), .ytab_data(ytab_data), .atab_addr(atab_addr), .atab_data(atab_data),
         .tm_req(tm_req), .tm_addr(tm_addr), .tm_ack(tm_ack),
@@ -126,7 +127,8 @@ module m11_render_tb;
         tmp = new[384*240*4];
         if (read_bytes({frame, "/pixels.bin"}, tmp, 384*240*4) != 384*240*4) begin $display("FAIL M11_RENDER: pixels"); $finish; end
         for (int i = 0; i < 384*240*4; i++) mame_px[i] = tmp[i];
-        chip.preload("local/sim/sdram_be.bin");
+        if (!$value$plusargs("SDRAM=%s", sdram_img)) sdram_img = "local/sim/sdram_be.bin";
+        chip.preload(sdram_img);
 
         repeat (4) @(posedge clk);
         init <= 0;

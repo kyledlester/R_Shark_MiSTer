@@ -63,13 +63,16 @@ module m2_loader_tb;
         int fd, n, errors, checked;
         logic [7:0] b0, b1;
         longint t0;
-        $readmemh("local/sim/maincpu.hex", exp68);
-        $readmemh("local/sim/audiocpu.hex", expz80);
+        string dir, stream;
+        if (!$value$plusargs("SIMDIR=%s", dir)) dir = "local/sim";
+        if (!$value$plusargs("STREAM=%s", stream)) stream = "local/rshark.rom";
+        $readmemh({dir, "/maincpu.hex"}, exp68);
+        $readmemh({dir, "/audiocpu.hex"}, expz80);
         repeat (4) @(posedge clk);
         init <= 0;
         repeat (13000) @(posedge clk);                    // SDRAM start-up
-        fd = $fopen("local/rshark.rom", "rb");
-        if (fd == 0) begin $display("FAIL M2_LOADER: no local/rshark.rom"); $finish; end
+        fd = $fopen(stream, "rb");
+        if (fd == 0) begin $display("FAIL M2_LOADER: no %s", stream); $finish; end
         ioctl_download <= 1;
         n = 0;
         while ($fread(b0, fd) == 1) begin
@@ -88,7 +91,7 @@ module m2_loader_tb;
         $display("streamed %0d words, loaded=%0d", n, loaded);
         // SDRAM image
         errors = 0; checked = 0;
-        fd = $fopen("local/sim/sdram_be.bin", "rb");
+        fd = $fopen({dir, "/sdram_be.bin"}, "rb");
         for (int k = 0; ; k++) begin
             logic [15:0] w;
             logic [15:0] got;
@@ -105,7 +108,7 @@ module m2_loader_tb;
         for (int i = 0; i < 131072; i++) if (m68[i] !== exp68[i]) begin errors++; if (errors <= 12) $display("68k ROM %05x: %04x vs %04x", i, m68[i], exp68[i]); end
         for (int i = 0; i < 65536; i++) if (z80[i] !== expz80[i]) begin errors++; if (errors <= 16) $display("Z80 ROM %04x: %02x vs %02x", i, z80[i], expz80[i]); end
         if (errors == 0 && loaded)
-            $display("PASS M2_LOADER: %0d stream words -> %0d SDRAM words, 131072 68000 ROM words, 65536 Z80 ROM bytes identical to romtool images", n, checked);
+            $display("PASS M2_LOADER: %s: %0d stream words -> %0d SDRAM words, 131072 68000 ROM words, 65536 Z80 ROM bytes identical to romtool images", stream, n, checked);
         else
             $display("FAIL M2_LOADER: %0d errors (loaded=%0d)", errors, loaded);
         $finish;
