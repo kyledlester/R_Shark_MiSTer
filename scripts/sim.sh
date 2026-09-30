@@ -29,6 +29,7 @@ spec() {
     m16) echo "m16_sound_tb|$T80 rtl/vendor/t80/T80s.vhd||+define+RSHARK_SIM_Z80ROM=\"local/sim/audiocpu.hex\"|rtl/rshark/rshark_ram.sv rtl/rshark/rshark_sound.sv $JT51 $JT6295 sim/tb/m16_sound_tb.sv" ;;
     m2)  python scripts/mk_sdram_sim.py build/sim/sdram_sim.sv
          echo "m2_loader_tb||||rtl/rshark/rshark_loader.sv rtl/rshark/rshark_sdram_arb.sv build/sim/sdram_sim.sv sim/models/sdr_sdram_model.sv sim/tb/m2_loader_tb.sv" ;;
+    m6)  echo "m6_inputs_tb|$T80 rtl/vendor/t80/T80s.vhd|cpu||rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN $VIDEO rtl/rshark/rshark_sdram_arb.sv rtl/rshark/rshark_loader.sv rtl/rshark/rshark_sound.sv rtl/rshark/rshark_overlay.sv rtl/rshark/rshark_core.sv $JT51 $JT6295 sim/tb/m6_inputs_tb.sv" ;;
     *) echo "" ;;
   esac
 }
@@ -57,8 +58,16 @@ run() {
 }
 
 if [ "${1:-}" = all ]; then
+  # Regression (ROM-derived images from scripts/romtool.py and MAME captures from scripts/mame/*.lua
+  # must exist in local/). Long runs (m15, m16 >= 1 s, m3 800k) are not part of it.
   fails=0
-  for t in ${SIM_TESTS:-m0}; do run "$t" || fails=$((fails+1)); done
+  run m0 || fails=$((fails+1))
+  run m6 || fails=$((fails+1))
+  run m3 +N=200000 || fails=$((fails+1))
+  run m11 +FRAME=local/frames/f02760 || fails=$((fails+1))
+  run m11 +FRAME=local/frames_flip/f03000 || fails=$((fails+1))
+  run m2 || fails=$((fails+1))
+  PRERUN="do sim/tb/zero_regs.do /m16_sound_tb/dut/ym;" run m16 +MS=300 || fails=$((fails+1))
   echo "REGRESSION: $fails failing"
   exit $fails
 fi
