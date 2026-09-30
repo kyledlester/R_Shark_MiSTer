@@ -108,7 +108,9 @@ module rshark_main (
     logic [15:0] copy_w [8];
     logic [15:0] spr_w [8];
     logic [2:0]  spr_sel;
-    for (genvar w = 0; w < 8; w++) begin : spr_words
+    genvar w;
+    generate
+    for (w = 0; w < 8; w = w + 1) begin : spr_words
         rshark_dpram #(.AW(8), .DW(8)) hi (
             .clk(clk), .a_addr(a[11:4]), .a_we(acc_we && sel_spr && a[3:1] == w && cpu_be[1]),
             .a_din(cpu_wdata[15:8]), .a_dout(spr_w[w][15:8]), .b_addr(copy_entry), .b_dout(copy_w[w][15:8]));
@@ -116,6 +118,7 @@ module rshark_main (
             .clk(clk), .a_addr(a[11:4]), .a_we(acc_we && sel_spr && a[3:1] == w && cpu_be[0]),
             .a_din(cpu_wdata[7:0]), .a_dout(spr_w[w][7:0]), .b_addr(copy_entry), .b_dout(copy_w[w][7:0]));
     end
+    endgenerate
     assign spr_q = spr_w[a[3:1]];
 
     // ------------------------------------------------------------------ bus backend

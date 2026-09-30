@@ -16,6 +16,15 @@ try {
     }
     $t0=Get-Date
     $qsh=Join-Path $QuartusBin 'quartus_sh.exe'
+    if ($MapOnly) {
+        # Analysis & Synthesis only (quick front-end check)
+        $qmap = Join-Path $QuartusBin 'quartus_map.exe'
+        cmd /c "`"$qmap`" RShark > build\quartus_map.log 2>&1"
+        $rc=$LASTEXITCODE
+        Select-String -Path build/quartus_map.log -Pattern '^Error' | Select-Object -First 20 | ForEach-Object { $_.Line }
+        "MAP exit=$rc"
+        return
+    }
     cmd /c "`"$qsh`" --flow compile RShark > build\quartus.log 2>&1"
     $rc=$LASTEXITCODE
     $mins=[math]::Round(((Get-Date)-$t0).TotalMinutes,1)

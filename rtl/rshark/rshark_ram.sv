@@ -63,3 +63,23 @@ module rshark_spram16 #(
         dout <= {hi[addr], lo[addr]};
     end
 endmodule
+
+// Simple dual-port RAM with separate write and read clocks; registered read.
+module rshark_dcram #(
+    parameter int AW = 10,
+    parameter int DW = 8,
+    parameter INIT = ""
+) (
+    input  logic          wclk,
+    input  logic [AW-1:0] w_addr,
+    input  logic          we,
+    input  logic [DW-1:0] din,
+    input  logic          rclk,
+    input  logic [AW-1:0] r_addr,
+    output logic [DW-1:0] dout
+);
+    logic [DW-1:0] mem [0:(1<<AW)-1];
+    initial if (INIT != "") $readmemh(INIT, mem);
+    always @(posedge wclk) if (we) mem[w_addr] <= din;
+    always @(posedge rclk) dout <= mem[r_addr];
+endmodule

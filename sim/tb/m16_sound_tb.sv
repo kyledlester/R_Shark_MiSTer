@@ -10,15 +10,17 @@
 // Plusargs: +MS=<milliseconds to run> (default 400), +N=<writes to compare, 0 = all>.
 `timescale 1ns/1ps
 module m16_sound_tb;
-    logic clk = 0;
+    logic clk = 0, clk_snd = 0;
+`ifdef M16_HALF
+    // production-shaped crossing: clk_snd = clk / 2 (clk 16 MHz here), board ce every 2nd clk_snd
+    always #31.25 clk = ~clk;
+    always @(posedge clk) clk_snd <= ~clk_snd;
+`else
     always #62.5 clk = ~clk;
+    always @* clk_snd = clk;
+`endif
     logic reset = 1;
 
-    logic [3:0] div = 0;
-    logic ce_4m, ce_1m;
-    always_ff @(posedge clk) div <= div + 4'd1;
-    assign ce_4m = div[0];
-    assign ce_1m = div[2:0] == 3'd7;
 
     logic [7:0] latch = 8'h00;
     logic oki_req, oki_ack = 0;
@@ -27,8 +29,9 @@ module m16_sound_tb;
     logic signed [15:0] snd;
     logic [15:0] c_lat, c_ym, c_oki, c_irq;
 
-    rshark_sound dut (
-        .clk(clk), .reset(reset), .ce_4m(ce_4m), .ce_1m(ce_1m), .latch(latch),
+    // clk_snd = the 8 MHz bench clock with ce_4m every 2nd clock (CE_NUM/CE_DEN = 1/2)
+    rshark_sound #(.CE_NUM(1), .CE_DEN(2)) dut (
+        .clk(clk), .clk_snd(clk_snd), .reset(reset), .pause(1'b0), .latch(latch),
         .rom_we(1'b0), .rom_waddr('0), .rom_wdata('0),
         .oki_req(oki_req), .oki_addr(oki_addr), .oki_ack(oki_ack), .oki_data(oki_data),
         .snd(snd), .dbg_latch_reads(c_lat), .dbg_ym_writes(c_ym), .dbg_oki_writes(c_oki), .dbg_z80_irqs(c_irq));
@@ -79,7 +82,7 @@ module m16_sound_tb;
 
     // time in microseconds since reset release: 8 clocks per us
     longint clks = 0;
-    always @(posedge clk) if (!reset) clks++;
+    always @(posedge clk_snd) if (!reset) clks++;
     real t_us;
     always @* t_us = clks / 8.0;
 
@@ -108,7 +111,7 @@ module m16_sound_tb;
         end
     end
 
-    always @(posedge clk) if (ce_1m && !reset) $fwrite(afd, "%c%c", snd[7:0], snd[15:8]);
+    always @(posedge clk_snd) if (dut.ce_1m && !reset) $fwrite(afd, "%c%c", snd[7:0], snd[15:8]);
 
     always @(posedge clk) if (t_us >= run_ms * 1000.0) finish_run();
 

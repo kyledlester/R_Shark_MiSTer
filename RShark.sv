@@ -122,7 +122,7 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1)) hps_io
 
 ///////////////////////   CLOCKS / RESET   ///////////////////////
 
-wire clk_sys;
+wire clk_sys, clk_snd;
 wire pll_locked;
 
 rshark_pll pll
@@ -130,6 +130,7 @@ rshark_pll pll
 	.refclk(CLK_50M),
 	.rst(1'b0),
 	.clk_sys(clk_sys),
+	.clk_snd(clk_snd),
 	.locked(pll_locked)
 );
 
@@ -159,6 +160,7 @@ wire signed [15:0] snd;
 rshark_core core
 (
 	.clk(clk_sys),
+	.clk_snd(clk_snd),
 	.init(init),
 	.reset(reset),
 	.pause(pause_cpu),

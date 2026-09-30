@@ -10,6 +10,7 @@
 //   rshark_sdram_arb -> SDRAM channel 1 (loader > OKI > tilemaps > sprites)
 module rshark_core (
     input  logic        clk,
+    input  logic        clk_snd,        // clk_sys / 2, sound board
     input  logic        init,
     input  logic        reset,
     input  logic        pause,
@@ -141,7 +142,7 @@ module rshark_core (
     assign {dbg_lat_rd, dbg_ym, dbg_oki, dbg_zirq} = '0;
 `else
     rshark_sound sound (
-        .clk(clk), .reset(reset), .ce_4m(ce_4m), .ce_1m(ce_1m), .latch(latch),
+        .clk(clk), .clk_snd(clk_snd), .reset(reset), .pause(pause), .latch(latch),
         .rom_we(romz80_we), .rom_waddr(romz80_addr), .rom_wdata(romz80_data),
         .oki_req(oki_req), .oki_addr(oki_addr), .oki_ack(oki_ack), .oki_data(mem_rdata),
         .snd(snd),
@@ -170,8 +171,8 @@ module rshark_core (
     logic [23:0] ovl_rgb;
     rshark_overlay overlay (
         .clk(clk), .ce_pix(ce_pix), .hcount(hcount), .vcount(vcount), .enable(dbg_overlay),
-        .values('{ {8'h00, dbg_pc}, {dbg_frames, dbg_irq5}, {dbg_irq6, dbg_latch},
-                   {dbg_lat_rd, dbg_zirq}, {dbg_ym, dbg_oki}, {dbg_overruns, 7'd0, loaded, ctrl_byte} }),
+        .values({ {8'h00, dbg_pc}, {dbg_frames, dbg_irq5}, {dbg_irq6, dbg_latch},
+                  {dbg_lat_rd, dbg_zirq}, {dbg_ym, dbg_oki}, {dbg_overruns, 7'd0, loaded, ctrl_byte} }),
         .rgb_in(vid_rgb), .rgb_out(ovl_rgb));
 
     always_ff @(posedge clk) if (ce_pix) begin

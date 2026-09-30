@@ -7,11 +7,19 @@
 //   YM2151 (jt51) clock 4 MHz; OKI M6295 (jt6295) clock 1 MHz, pin 7 high (divider 132 = 7.576 kHz).
 // Mono mix as MAME: YM left and right x 0.35 each + OKI x 0.42 (MAME scales OKI's 12-bit voices to
 // full range: x16 against the YM's 16-bit scale), then x0.75 headroom, saturated to 16 bits.
-module rshark_sound (
-    input  logic        clk,
-    input  logic        reset,
-    input  logic        ce_4m,
-    input  logic        ce_1m,
+//
+// Clocking: the board runs on clk_snd = clk_sys / 2 (same PLL, phase aligned: all crossings are
+// synchronous and timing-analysed). ce_4m is an exact-average fractional 4 MHz enable of clk_snd
+// (4,000,000 / 47,185,920), ce_1m = ce_4m / 4. The download port and the OKI SDRAM client stay in
+// the clk_sys domain (dual-clock ROM, level handshake for OKI reads).
+module rshark_sound #(
+    parameter int CE_NUM = 4_000_000,     // ce_4m = CE_NUM / CE_DEN of clk_snd
+    parameter int CE_DEN = 47_185_920
+) (
+    input  logic        clk,            // clk_sys: download, OKI SDRAM port, audio output
+    input  logic        clk_snd,        // sound board clock
+    input  logic        reset,          // clk_sys domain
+    input  logic        pause,          // clk_sys domain
 
     input  logic  [7:0] latch,
 
@@ -33,6 +41,36 @@ module rshark_sound (
     output logic [15:0] dbg_oki_writes,
     output logic [15:0] dbg_z80_irqs
 );
+    // ------------------------------------------------------------------ clk_snd domain basics
+    logic [1:0] rst_s = 2'b11, pause_s = 2'b00;
+    always_ff @(posedge clk_snd) begin
+        rst_s   <= {rst_s[0], reset};
+        pause_s <= {pause_s[0], pause};
+    end
+    wire rst = rst_s[1];
+
+    logic [26:0] acc4;
+    logic [1:0]  q;
+    logic        ce_4m, ce_1m;
+    always_ff @(posedge clk_snd) begin
+        ce_4m <= 1'b0;
+        ce_1m <= 1'b0;
+        if (rst) begin
+            acc4 <= '0; q <= '0;
+        end else if (!pause_s[1]) begin
+            if (acc4 + 27'(CE_NUM) >= 27'(CE_DEN)) begin
+                acc4  <= acc4 + 27'(CE_NUM) - 27'(CE_DEN);
+                ce_4m <= 1'b1;
+                q     <= q + 2'd1;
+                ce_1m <= q == 2'd3;
+            end else
+                acc4 <= acc4 + 27'(CE_NUM);
+        end
+    end
+
+    logic [7:0] latch_s;
+    always_ff @(posedge clk_snd) latch_s <= latch;     // written rarely; related clocks
+
     // ------------------------------------------------------------------ Z80
     logic        mreq_n, iorq_n, rd_n, wr_n, m1_n, rfsh_n;
     logic [15:0] A;
@@ -40,7 +78,7 @@ module rshark_sound (
     logic        irq_n;
 
     T80s #(.Mode(0), .T2Write(1), .IOWait(1)) z80 (
-        .RESET_n(!reset), .CLK(clk), .CEN(ce_4m), .WAIT_n(1'b1), .INT_n(irq_n), .NMI_n(1'b1),
+        .RESET_n(!rst), .CLK(clk_snd), .CEN(ce_4m), .WAIT_n(1'b1), .INT_n(irq_n), .NMI_n(1'b1),
         .BUSRQ_n(1'b1), .M1_n(m1_n), .MREQ_n(mreq_n), .IORQ_n(iorq_n), .RD_n(rd_n), .WR_n(wr_n),
         .RFSH_n(rfsh_n), .HALT_n(), .BUSAK_n(), .OUT0(1'b0), .A(A), .DI(cpu_di), .DO(cpu_do));
 
@@ -52,19 +90,20 @@ module rshark_sound (
     wire sel_oki = mem && A == 16'hF80A;
 
     logic [7:0] rom_q, ram_q;
-    rshark_sdpram #(.AW(16), .DW(8)
+    rshark_dcram #(.AW(16), .DW(8)
 `ifdef RSHARK_SIM_Z80ROM
         , .INIT(`RSHARK_SIM_Z80ROM)
 `endif
-    ) rom (.clk(clk), .w_addr(rom_waddr), .we(rom_we), .din(rom_wdata), .r_addr(A), .dout(rom_q));
+    ) rom (.wclk(clk), .w_addr(rom_waddr), .we(rom_we), .din(rom_wdata),
+           .rclk(clk_snd), .r_addr(A), .dout(rom_q));
 
     // one write strobe per Z80 write cycle
     logic wr_n_d;
-    always_ff @(posedge clk) wr_n_d <= wr_n;
+    always_ff @(posedge clk_snd) wr_n_d <= wr_n;
     wire wr_edge = wr_n_d && !wr_n;
 
     rshark_dpram #(.AW(11), .DW(8)) ram (
-        .clk(clk), .a_addr(A[10:0]), .a_we(sel_ram && wr_edge), .a_din(cpu_do), .a_dout(ram_q),
+        .clk(clk_snd), .a_addr(A[10:0]), .a_we(sel_ram && wr_edge), .a_din(cpu_do), .a_dout(ram_q),
         .b_addr(11'd0), .b_dout());
 
     // ------------------------------------------------------------------ YM2151
@@ -72,14 +111,14 @@ module rshark_sound (
     logic signed [15:0] ym_l, ym_r;
     logic ym_sample;
     logic ce_2m;
-    always_ff @(posedge clk) begin
-        if (reset) ce_2m <= 1'b0;
+    always_ff @(posedge clk_snd) begin
+        if (rst) ce_2m <= 1'b0;
         else if (ce_4m) ce_2m <= !ce_2m;
     end
     wire cen_p1 = ce_4m && ce_2m;
 
     jt51 ym (
-        .rst(reset), .clk(clk), .cen(ce_4m), .cen_p1(cen_p1),
+        .rst(rst), .clk(clk_snd), .cen(ce_4m), .cen_p1(cen_p1),
         .cs_n(!(sel_ym && (wr_edge || !rd_n))), .wr_n(!(sel_ym && wr_edge)), .a0(A[0]),
         .din(cpu_do), .dout(ym_dout), .ct1(), .ct2(), .irq_n(irq_n),
         .sample(ym_sample), .left(), .right(), .xleft(ym_l), .xright(ym_r));
@@ -91,32 +130,52 @@ module rshark_sound (
     logic        oki_rom_ok;
     logic signed [13:0] oki_snd;
     jt6295 #(.INTERPOL(0)) oki (
-        .rst(reset), .clk(clk), .cen(ce_1m), .ss(1'b1),
+        .rst(rst), .clk(clk_snd), .cen(ce_1m), .ss(1'b1),
         .wrn(!(sel_oki && !wr_n)), .din(cpu_do), .dout(oki_dout),
         .rom_addr(oki_rom_addr), .rom_data(oki_rom_data), .rom_ok(oki_rom_ok),
         .sound(oki_snd), .sample());
 
     // 8-byte line cache in front of SDRAM (OKI region at SDRAM byte 0x800000, bytes little-endian
-    // within each word: byte address k -> word k/2, byte k&1)
-    logic [14:0] line_tag, req_tag;
+    // within each word: byte address k -> word k/2, byte k&1). Crossing to the clk_sys SDRAM port by
+    // a level handshake: clk_snd raises fill_rq with fill_tag; clk_sys performs the burst, stores it
+    // in fill_data and raises fill_done; clk_snd takes the line and drops fill_rq; clk_sys drops
+    // fill_done.
+    logic [14:0] line_tag, fill_tag;
     logic        line_valid;
-    logic [63:0] line_data;
+    logic [63:0] line_data, fill_data;
+    logic        fill_rq, fill_done;
     wire hit = line_valid && line_tag == oki_rom_addr[17:3];
-    always_ff @(posedge clk) begin
-        if (reset) begin
+    always_ff @(posedge clk_snd) begin
+        if (rst) begin
             line_valid <= 1'b0;
-            oki_req <= 1'b0;
-        end else if (oki_req) begin
-            if (oki_ack) begin
-                oki_req    <= 1'b0;
-                line_data  <= oki_data;
-                line_tag   <= req_tag;
+            fill_rq    <= 1'b0;
+        end else if (fill_rq) begin
+            if (fill_done) begin
+                fill_rq    <= 1'b0;
+                line_data  <= fill_data;
+                line_tag   <= fill_tag;
                 line_valid <= 1'b1;
             end
-        end else if (!hit) begin
-            oki_req  <= 1'b1;
-            req_tag  <= oki_rom_addr[17:3];
-            oki_addr <= 25'h400000 + {8'd0, oki_rom_addr[17:3], 2'b00};
+        end else if (!hit && !fill_done) begin
+            fill_rq  <= 1'b1;
+            fill_tag <= oki_rom_addr[17:3];
+        end
+    end
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            oki_req   <= 1'b0;
+            fill_done <= 1'b0;
+        end else if (!fill_rq) begin
+            fill_done <= 1'b0;
+        end else if (!fill_done) begin
+            if (!oki_req) begin
+                oki_req  <= 1'b1;
+                oki_addr <= 25'h400000 + {8'd0, fill_tag, 2'b00};
+            end else if (oki_ack) begin
+                oki_req   <= 1'b0;
+                fill_data <= oki_data;
+                fill_done <= 1'b1;
+            end
         end
     end
     assign oki_rom_ok   = hit;
@@ -127,28 +186,30 @@ module rshark_sound (
         cpu_di = 8'h00;                                 // MAME unmapped read value
         if (sel_rom)      cpu_di = rom_q;
         else if (sel_ram) cpu_di = ram_q;
-        else if (sel_lat) cpu_di = latch;
+        else if (sel_lat) cpu_di = latch_s;
         else if (sel_ym)  cpu_di = ym_dout;
         else if (sel_oki) cpu_di = oki_dout;
         else if (!iorq_n && !m1_n) cpu_di = 8'hFF;      // IM 1 acknowledge (bus floats high)
     end
 
-    // ------------------------------------------------------------------ mix
-    always_ff @(posedge clk) begin
+    // ------------------------------------------------------------------ mix (clk_snd), output (clk)
+    logic signed [15:0] snd_s;
+    always_ff @(posedge clk) snd <= snd_s;
+    always_ff @(posedge clk_snd) begin
         logic signed [23:0] acc;
         acc = (($signed(ym_l) + $signed(ym_r)) * 24'sd34 + $signed(oki_snd) * 24'sd645) >>> 7;
-        if (acc > 24'sd32767) snd <= 16'sd32767;
-        else if (acc < -24'sd32768) snd <= -16'sd32768;
-        else snd <= acc[15:0];
+        if (acc > 24'sd32767) snd_s <= 16'sd32767;
+        else if (acc < -24'sd32768) snd_s <= -16'sd32768;
+        else snd_s <= acc[15:0];
     end
 
     // ------------------------------------------------------------------ debug counters
     logic irq_n_d;
     logic rd_n_d;
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk_snd) begin
         irq_n_d <= irq_n;
         rd_n_d  <= rd_n;
-        if (reset) begin
+        if (rst) begin
             dbg_latch_reads <= '0; dbg_ym_writes <= '0; dbg_oki_writes <= '0; dbg_z80_irqs <= '0;
         end else begin
             if (sel_lat && rd_n_d && !rd_n) dbg_latch_reads <= dbg_latch_reads + 16'd1;

@@ -9,8 +9,9 @@
 // Requires +define+RSHARK_SIM_ROM=... +define+RSHARK_SIM_Z80ROM=... (scripts/sim.sh m15).
 `timescale 1ns/1ps
 module m15_system_tb;
-    logic clk = 0;
+    logic clk = 0, clk_snd = 0;
     always #5.298 clk = ~clk;
+    always @(posedge clk) clk_snd <= ~clk_snd;
     logic init = 1, reset = 1;
 
     logic [26:1] sd_addr; logic [15:0] sd_din; logic [1:0] sd_be; logic sd_req, sd_rnw, sd_ready;
@@ -20,7 +21,7 @@ module m15_system_tb;
     logic ioctl_wait;
 
     rshark_core dut (
-        .clk(clk), .init(init), .reset(reset), .pause(1'b0),
+        .clk(clk), .clk_snd(clk_snd), .init(init), .reset(reset), .pause(1'b0),
         .ioctl_download(1'b0), .ioctl_index(16'd0), .ioctl_wr(1'b0), .ioctl_addr('0), .ioctl_dout('0),
         .ioctl_wait(ioctl_wait),
         .sd_addr(sd_addr), .sd_din(sd_din), .sd_be(sd_be), .sd_req(sd_req), .sd_rnw(sd_rnw),

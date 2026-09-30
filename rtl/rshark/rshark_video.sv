@@ -113,12 +113,15 @@ module rshark_video (
         .clk(clk),
         .a_addr({rd_half, rd_x}), .a_we(clr), .a_din(13'd0), .a_dout(tq),
         .b_addr({wr_half, tlb_x}), .b_we(tlb_we), .b_din(tlb_data));
-    for (genvar b = 0; b < 2; b++) begin : slb_banks
+    genvar b;
+    generate
+    for (b = 0; b < 2; b = b + 1) begin : slb_banks
         rshark_tdpram #(.AW(9), .DW(8), .FILL(8'hFF)) slb (
             .clk(clk),
-            .a_addr({rd_half, rd_sx[8:1]}), .a_we(clr && rd_sx[0] == b[0]), .a_din(8'hFF), .a_dout(sq[b]),
+            .a_addr({rd_half, rd_sx[8:1]}), .a_we(clr && rd_sx[0] == 1'(b)), .a_din(8'hFF), .a_dout(sq[b]),
             .b_addr({wr_half, slb_addr[b]}), .b_we(slb_we[b]), .b_din(slb_data[b]));
     end
+    endgenerate
 
     // ------------------------------------------------------------------ palette
     logic [10:0] pal_raddr;

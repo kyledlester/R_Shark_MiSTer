@@ -3,7 +3,7 @@
 //
 // Drawn so that it reads left-to-right on the ROT270 (counter-clockwise rotated) display:
 // display (X, Y) = (raster y, 383 - raster x) over the 384 x 240 visible area. Text origin display
-// (8, 8), 8 x 8 glyphs, 10-pixel line pitch; black box behind the text. hcount/vcount are the raster
+// (8, 8), 8 x 8 glyphs, 16-pixel line pitch; black box behind the text. hcount/vcount are the raster
 // counters; the overlay's pixel decision is aligned with rgb_in, which is 2 dots behind hcount.
 module rshark_overlay (
     input  logic        clk,
@@ -11,7 +11,7 @@ module rshark_overlay (
     input  logic  [8:0] hcount,
     input  logic  [7:0] vcount,
     input  logic        enable,
-    input  logic [31:0] values [6],
+    input  logic [191:0] values,     // value k at [191-32k -: 32] (k = 0 is the top line)
     input  logic [23:0] rgb_in,
     output logic [23:0] rgb_out
 );
@@ -45,26 +45,18 @@ module rshark_overlay (
     wire [8:0] dy = 9'd383 - xv;                // display Y
     wire [7:0] dx = yv;                         // display X
 
-    logic       in_box, pix;
-    always_comb begin
-        logic [8:0] ly; logic [7:0] lx;
-        logic [2:0] line; logic [3:0] gy; logic [2:0] ch; logic [2:0] gx;
-        logic [3:0] digit;
-        in_box = 1'b0; pix = 1'b0;
-        ly = dy - 9'd6;                          // box margin 2 around text at Y 8
-        lx = dx - 8'd6;
+    logic       in_box, pix;          // registered; used on the next ce_pix (12 clocks later)
+    always_ff @(posedge clk) begin
+        logic [8:0] ly; logic [7:0] lx; logic [7:0] g;
+        in_box <= 1'b0; pix <= 1'b0;
+        ly = dy - 9'd8;                          // text-relative display Y / X
+        lx = dx - 8'd8;
         if (hx >= 9'd64 && hx < 9'd448 && vcount >= 8'd8 && vcount < 8'd248 &&
-            dy >= 9'd6 && dy < 9'd6 + 9'd62 && dx >= 8'd6 && dx < 8'd6 + 8'd68) begin
-            in_box = 1'b1;
-            if (dy >= 9'd8 && dx >= 8'd8) begin
-                line = 3'((dy - 9'd8) / 9'd10);
-                gy   = 4'((dy - 9'd8) % 9'd10);
-                ch   = 3'((dx - 8'd8) >> 3);
-                gx   = 3'(dx - 8'd8);
-                if (line < 3'd6 && gy < 4'd8 && dx < 8'd8 + 8'd64) begin
-                    digit = values[line][31 - ch*4 -: 4];
-                    pix = glyph(digit, gy[2:0])[7 - gx];
-                end
+            dy >= 9'd6 && dy < 9'd8 + 9'd96 && dx >= 8'd6 && dx < 8'd8 + 8'd66) begin
+            in_box <= 1'b1;
+            if (dy >= 9'd8 && dx >= 8'd8 && ly[3] == 1'b0 && ly[8:4] < 5'd6 && lx < 8'd64) begin
+                g = glyph(values[191 - ly[6:4]*32 - lx[5:3]*4 -: 4], ly[2:0]);
+                pix <= g[7 - lx[2:0]];
             end
         end
     end
