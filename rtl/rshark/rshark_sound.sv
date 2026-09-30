@@ -6,7 +6,7 @@
 //   F808-F809 YM2151, F80A OKI M6295. YM2151 IRQ -> Z80 INT (the program runs IM 1). No NMI.
 //   YM2151 (jt51) clock 4 MHz; OKI M6295 (jt6295) clock 1 MHz, pin 7 high (divider 132 = 7.576 kHz).
 // Mono mix as MAME: YM left and right x 0.35 each + OKI x 0.42 (MAME scales OKI's 12-bit voices to
-// full range: x16 against the YM's 16-bit scale), then x0.75 headroom, saturated to 16 bits.
+// full range: x16 against the YM's 16-bit scale), saturated to 16 bits like MAME's output.
 //
 // Clocking: the board runs on clk_snd = clk_sys / 2 (same PLL, phase aligned: all crossings are
 // synchronous and timing-analysed). ce_4m is an exact-average fractional 4 MHz enable of clk_snd
@@ -42,22 +42,27 @@ module rshark_sound #(
     output logic [15:0] dbg_z80_irqs
 );
     // ------------------------------------------------------------------ clk_snd domain basics
-    logic [1:0] rst_s = 2'b11, pause_s = 2'b00;
+    // Reset is synchronised and stretched to 4096 clk_snd (> 300 ce_4m): jt51's shift-register
+    // pipelines only take their reset value if reset spans as many enabled clocks as they have
+    // stages (jt51_sh.v), so the enables keep running during reset.
+    logic [1:0]  rst_s = 2'b11, pause_s = 2'b00;
+    logic [11:0] rst_cnt = '1;
+    logic        rst = 1'b1;
     always_ff @(posedge clk_snd) begin
         rst_s   <= {rst_s[0], reset};
         pause_s <= {pause_s[0], pause};
+        if (rst_s[1]) rst_cnt <= '1;
+        else if (rst_cnt != 0) rst_cnt <= rst_cnt - 12'd1;
+        rst <= rst_s[1] || rst_cnt != 0;
     end
-    wire rst = rst_s[1];
 
-    logic [26:0] acc4;
-    logic [1:0]  q;
+    logic [26:0] acc4 = '0;
+    logic [1:0]  q = '0;
     logic        ce_4m, ce_1m;
     always_ff @(posedge clk_snd) begin
         ce_4m <= 1'b0;
         ce_1m <= 1'b0;
-        if (rst) begin
-            acc4 <= '0; q <= '0;
-        end else if (!pause_s[1]) begin
+        if (!pause_s[1] || rst) begin
             if (acc4 + 27'(CE_NUM) >= 27'(CE_DEN)) begin
                 acc4  <= acc4 + 27'(CE_NUM) - 27'(CE_DEN);
                 ce_4m <= 1'b1;
@@ -197,7 +202,7 @@ module rshark_sound #(
     always_ff @(posedge clk) snd <= snd_s;
     always_ff @(posedge clk_snd) begin
         logic signed [23:0] acc;
-        acc = (($signed(ym_l) + $signed(ym_r)) * 24'sd34 + $signed(oki_snd) * 24'sd645) >>> 7;
+        acc = (($signed(ym_l) + $signed(ym_r)) * 24'sd45 + $signed(oki_snd) * 24'sd860) >>> 7;
         if (acc > 24'sd32767) snd_s <= 16'sd32767;
         else if (acc < -24'sd32768) snd_s <= -16'sd32768;
         else snd_s <= acc[15:0];

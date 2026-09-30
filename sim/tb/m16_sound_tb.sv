@@ -111,15 +111,47 @@ module m16_sound_tb;
         end
     end
 
+    int n_xop = 0, n_xl = 0, n_xoki = 0; int mn_op = 0, max_ph = 0, n_phchg = 0; logic [9:0] last_ph; int n_keyon = 0, max_kc = 0, max_tl = 0, min_tl = 999, max_mul = 0; int pk_yl = 0, pk_yr = 0, pk_oki = 0, pk_mix = 0, ym_samples = 0, pk_op = 0, min_eg = 1023;
+    always @(posedge clk_snd) begin
+        if ($signed(dut.ym_l) > pk_yl) pk_yl = $signed(dut.ym_l);
+        if ($signed(dut.ym_r) > pk_yr) pk_yr = $signed(dut.ym_r);
+        if ($signed(dut.oki_snd) > pk_oki) pk_oki = $signed(dut.oki_snd);
+        if ($signed(dut.snd_s) > pk_mix) pk_mix = $signed(dut.snd_s);
+        if (dut.ym_sample) ym_samples++;
+        if ($signed(dut.ym.op_out) > pk_op) pk_op = $signed(dut.ym.op_out);
+        if (dut.ym.eg_XI < min_eg && t_us > 530000) min_eg = dut.ym.eg_XI;
+        if (dut.ym.keyon_II && dut.ce_4m) n_keyon++;
+        if ($signed(dut.ym.op_out) < mn_op) mn_op = $signed(dut.ym.op_out);
+        if ($isunknown(dut.ym.op_out)) n_xop++;
+        if ($isunknown(dut.ym_l)) n_xl++;
+        if ($isunknown(dut.oki_snd)) n_xoki++;
+        if (dut.ym.ph_X > max_ph) max_ph = dut.ym.ph_X;
+        if (dut.ym.ph_X != last_ph) begin n_phchg++; last_ph = dut.ym.ph_X; end
+        if (dut.ym.kc_I > max_kc) max_kc = dut.ym.kc_I;
+        if (dut.ym.mul_VI > max_mul) max_mul = dut.ym.mul_VI;
+        if (dut.ym.tl_VII > max_tl) max_tl = dut.ym.tl_VII;
+        if (dut.ym.tl_VII < min_tl) min_tl = dut.ym.tl_VII;
+    end
     always @(posedge clk_snd) if (dut.ce_1m && !reset) $fwrite(afd, "%c%c", snd[7:0], snd[15:8]);
 
     always @(posedge clk) if (t_us >= run_ms * 1000.0) finish_run();
+
+    initial begin
+        #2000000;   // 2 ms
+        $display("X check @2ms: c1_enters %b m1 %b cycles %b cur_op %b eg %b ph %b op %b prev1 %b x %b phasemod %b",
+            dut.ym.c1_enters, dut.ym.m1_enters, dut.ym.cycles, dut.ym.cur_op, dut.ym.eg_XI, dut.ym.ph_X,
+            dut.ym.op_out, dut.ym.u_op.prev1, dut.ym.u_op.x, dut.ym.u_op.phasemod_II);
+        $display("pg: phinc_III %b ph_VII %b ph_VIII %b pg_rst_VII %b kc_I %b kf_I %b dt1 %b mul %b pm %b rst %b",
+            dut.ym.u_pg.phinc_III, dut.ym.u_pg.ph_VII, dut.ym.u_pg.ph_VIII, dut.ym.u_pg.pg_rst_VII,
+            dut.ym.kc_I, dut.ym.kf_I, dut.ym.dt1_II, dut.ym.mul_VI, dut.ym.pm, dut.rst);
+    end
 
     task automatic finish_run();
         int expected;
         expected = 0;
         while (expected < w_t.size() && w_t[expected] <= t_us) expected++;
         $fclose(afd);
+        $display("audio peaks: ym_l %0d ym_r %0d oki %0d mix %0d; ym sample strobes %0d; op_out peak %0d, min eg after 530 ms %0d; keyon_II %0d, max kc %0d mul %0d tl %0d..%0d; op min %0d, phase max %0d changes %0d; X cycles op %0d ym_l %0d oki %0d", pk_yl, pk_yr, pk_oki, pk_mix, ym_samples, pk_op, min_eg, n_keyon, max_kc, max_mul, min_tl, max_tl, mn_op, max_ph, n_phchg, n_xop, n_xl, n_xoki);
         if (errors == 0 && wi > 0 && (wi == expected || wi == expected - 1 || wi == expected + 1))
             $display("PASS M16_SOUND: %.0f ms, %0d YM/OKI writes identical to MAME in order (MAME %0d by now, max time offset %.1f us); latch reads %0d, Z80 IRQs %0d, latch values replayed %0d",
                 t_us / 1000.0, wi, expected, maxdt, c_lat, c_irq, li);

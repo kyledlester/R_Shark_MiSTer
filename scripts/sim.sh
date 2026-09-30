@@ -49,7 +49,7 @@ run() {
   if [ -n "$cpu" ]; then "$MS/vlog.exe" -sv -quiet -suppress 7061 -work "$lib" $FX68K >> "$log" 2>&1 || { echo "FAIL $t: vlog fx68k (see $log)"; return 1; }; fi
   "$MS/vlog.exe" -sv -quiet -work "$lib" $defs ${VLOGDEFS:-} +incdir+sim/tb $sv >> "$log" 2>&1 || { echo "FAIL $t: vlog (see $log)"; grep -E "Error|error" "$log" | head -20; return 1; }
   [ -n "${SIM_COMPILE_ONLY:-}" ] && { echo "COMPILED $t ($lib)"; return 0; }
-  "$MS/vsim.exe" -c -suppress 8315,8360 -L altera_mf_ver -L altera_ver -lib "$lib" "$top" "$@" -do 'run -all; quit -f' >> "$log" 2>&1
+  "$MS/vsim.exe" -c -suppress 8315,8360 ${VSIMARGS:-} -L altera_mf_ver -L altera_ver -lib "$lib" "$top" "$@" -do "${PRERUN:-} run -all; quit -f" >> "$log" 2>&1
   r=$(grep -E "^# (PASS|FAIL) " "$log" | tail -1 | sed 's/^# //')
   if [ -z "$r" ]; then echo "FAIL $t: no verdict (see $log)"; grep -E "Error|Fatal" "$log" | head -10; return 1; fi
   echo "$r"
