@@ -10,6 +10,9 @@
 //   V: active 8..247, front porch 248..249, VSync 250..252, back porch 253..7.
 // Events (one clk_sys pulse, on the ce_pix that enters dot 0 of the line):
 //   line_start : every line, with the new vcount valid.
+// Reset phase: MAME starts its screen at vblank begin (screen.cpp: m_vblank_start_time = 0), i.e.
+// the beam is at line 248, dot 0 at time 0. The raster leaves reset at the same position so CPU
+// time and interrupt lines keep MAME's phase (sim/tb/m3_boot_tb.sv compares bus traces).
 module rshark_video_timing (
     input  logic       clk,
     input  logic       rst,
@@ -26,7 +29,7 @@ module rshark_video_timing (
         line_start <= 1'b0;
         if (rst) begin
             hcount <= '0;
-            vcount <= 8'd0;
+            vcount <= 8'd248;
         end else if (ce_pix) begin
             hcount <= hcount + 9'd1;
             if (hcount == 9'd511) begin

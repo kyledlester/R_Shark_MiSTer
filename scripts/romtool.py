@@ -314,8 +314,8 @@ def main():
         d = os.path.join(out, "sim")
         os.makedirs(d, exist_ok=True)
         mem = build_sdram(regs)
-        with open(os.path.join(d, "sdram.bin"), "wb") as f:   # little-endian 16-bit words
-            f.write(b"".join(w.to_bytes(2, "little") for w in mem))
+        with open(os.path.join(d, "sdram_be.bin"), "wb") as f:   # big-endian 16-bit words
+            f.write(b"".join(w.to_bytes(2, "big") for w in mem))
         mc = regs["maincpu"]
         write_hex16(os.path.join(d, "maincpu.hex"), [(mc[2 * i] << 8) | mc[2 * i + 1] for i in range(len(mc) // 2)])
         write_hex8(os.path.join(d, "audiocpu.hex"), regs["audiocpu"])

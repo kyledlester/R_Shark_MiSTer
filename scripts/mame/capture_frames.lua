@@ -56,6 +56,7 @@ emu.register_frame_done(function()
     os.execute('mkdir "' .. d:gsub("/", "\\") .. '" 2>nul')
     wfile(d .. "/palette.bin", share_bytes(":palette"))
     wfile(d .. "/sprbuf.bin", prev_spr)
+    wfile(d .. "/spr_live.bin", share_bytes(":spriteram"))   -- what the vblank copy takes now
     local t = {}
     for i = 0x040000, 0x04fffe, 2 do local w = sp:read_u16(i); t[#t + 1] = string.char(w >> 8, w & 0xff) end
     wfile(d .. "/ram.bin", table.concat(t))

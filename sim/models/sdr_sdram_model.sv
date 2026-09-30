@@ -63,6 +63,23 @@ module sdr_sdram_model #(
     reg        dq_oe = 1'b0;
     assign dq = dq_oe ? dq_out : 16'hZZZZ;
 
+    // R-Shark: preload a big-endian 16-bit word image (word address = {ba, row, col}, which is the
+    // controller's ch1 word address) - scripts/romtool.py images -> local/sim/sdram_be.bin.
+    task automatic preload(input string file);
+        int fd, n;
+        bit [15:0] w;
+        fd = $fopen(file, "rb");
+        if (fd == 0) begin $display("sdr_sdram_model: cannot open %s", file); return; end
+        n = 0;
+        while ($fread(w, fd) == 2) begin
+            if (w != 16'h0000) mem[n] = w;
+            else mem[n] = 16'h0000;
+            n++;
+        end
+        $fclose(fd);
+        $display("sdr_sdram_model: preloaded %0d words from %s", n, file);
+    endtask
+
     function automatic int cyc(input real ns);
         return $rtoi((ns + TCK_NS - 0.001) / TCK_NS);
     endfunction
