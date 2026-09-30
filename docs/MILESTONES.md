@@ -8,7 +8,7 @@
 | M3 | FX68K boot from the real ROM | done | `sim.sh m3`: 200,000 bus transactions identical to MAME |
 | M4 | Complete 68000 address decoder | done | 328,777 transactions identical (boot RAM tests, I/O, video registers) |
 | M5 | Interrupts, frame timing, sprite buffering | done | interrupts on MAME's lines/transactions; divergence only in sub-us IACK timing (KNOWN_ISSUES 6) |
-| M6 | Inputs / DIPs | implemented | active-low mapping as MAME, MRA DIP table; hardware test pending |
+| M6 | Inputs / DIPs | done (sim) | `sim.sh m6`: 27 checks (all joystick/button/coin/start/service bits, DIP download); hardware test pending |
 | M7 | Palette | done | pixel-exact renders |
 | M8 | Dooyong ROM tilemap research | done | refrender.py pixel-exact on 60 attract, 17 gameplay, 12 flipped MAME frames |
 | M9 | Video timing | done | m0; raster = MAME logical raster |
@@ -16,7 +16,7 @@
 | M15 | Video-complete integration | done (sim) | `sim.sh m15` (whole board from reset): displayed frames 55-62 pixel-exact vs MAME; 68000 latch writes identical in count/values |
 | M16 | Z80 sound CPU | done (sim) | `sim.sh m16`: 3 s, 10,419 YM/OKI writes identical to MAME in order |
 | M17 | YM2151 | done (sim) | audio vs `mame -wavwrite`: envelope corr 0.912, spectrum corr 0.929 |
-| M18 | OKI6295 | in verification | first OKI play command at 7.1 s; 8.2 s run pending |
-| M19 | Mix / playable gate | built | RBF with timing closed; hardware test is the next information source |
-| M22 | Timing closure | done | clk_sys +0.944 ns, clk_snd +4.009 ns, all setup/hold positive |
+| M18 | OKI6295 | done (sim) | 8.2 s run: OKI phrases play from 7.13 s; audio 7.1-8.2 s level ratio 1.00, envelope corr 0.961 vs MAME |
+| M19 | Mix / playable gate | built, awaiting hardware | `Releases/RShark_20260930.rbf` (timing closed) + MRA; mix = MAME gains; physical MiSTer test is the next information source |
+| M22 | Timing closure | done | build 3: clk_sys +0.438 ns setup, all setup/hold positive; 82 % ALMs, 512/553 M10K |
 | M20, M21, M23 | CRT pass, accuracy, release | pending hardware feedback | |

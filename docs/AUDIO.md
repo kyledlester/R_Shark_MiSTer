@@ -46,4 +46,10 @@ unmapped / ignored, as in MAME.
   bench deposits 0 into the jt51 instance before running (`PRERUN="do sim/tb/zero_regs.do
   /m16_sound_tb/dut/ym;"`), which is what the FPGA does at configuration.
 * `scripts/audiocheck.py` compares the bench's audio with `mame -wavwrite` output (envelope and
-  spectrum correlation, level ratio).
+  spectrum correlation, level ratio). 8.2 s of attract (music from 0.53 s, OKI samples from 7.13 s):
+  0.5-8.2 s level ratio 0.95, 10 ms envelope correlation 0.922, log-spectrum correlation 0.977;
+  OKI window 7.1-8.2 s ratio 1.00, envelope 0.961. Every 100 ms window within about 2 % of MAME.
+* Over 8.2 s, 27,924 of 27,924 chip writes occur; 15 around 7.558 s are reordered: the Z80's OKI
+  stop routine (driven by OKI busy-flag polling) interleaves differently with the YM timer IRQ
+  handler because the bench's Z80 starts 0.5 ms after MAME's (reset stretch at the bench clock).
+  The stream re-converges immediately; audio is unaffected.

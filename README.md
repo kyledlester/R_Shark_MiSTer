@@ -4,8 +4,10 @@ MiSTer FPGA core for Dooyong's **R-Shark** (MAME set `rshark`), a vertical shoot
 Dooyong 68000 board: 68000 @ 8 MHz, Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers
 and buffered 16x16 sprites.
 
-**Status: first pass, awaiting hardware validation.** Video, CPU and sound boards are verified in
-simulation against MAME 0.289 (see [docs/MILESTONES.md](docs/MILESTONES.md)).
+**Status: first pass, awaiting hardware validation.** In simulation against MAME 0.289: the whole
+board runs the real game from reset with displayed frames pixel-exact to MAME, and the sound board's
+register stream and audio match MAME (see [docs/MILESTONES.md](docs/MILESTONES.md)). Quartus timing
+is closed.
 
 ROMs are not included. You must supply your own `rshark.zip` (MAME 0.289 set, `mame -verifyroms
 rshark` = good).
