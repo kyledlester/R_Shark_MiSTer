@@ -31,7 +31,7 @@ module rshark_tilemap (
     localparam logic [25:1] MAP_BASE [4] = '{25'h300000, 25'h340000, 25'h380000, 25'h3C0000}; // byte 0x600000.. /2
     localparam logic [10:0] PAL_BASE [4] = '{11'd1024, 11'd768, 11'd512, 11'd256};
 
-    typedef enum logic [2:0] {S_IDLE, S_LAYER, S_MAP, S_PIX, S_PUSH, S_NEXT} st_t;
+    typedef enum logic [2:0] {S_IDLE, S_LAYER, S_MAP, S_MAPC1, S_MAPC2, S_PIX, S_PUSH, S_NEXT} st_t;
     st_t st;
 
     logic [1:0]  layer;
@@ -47,6 +47,24 @@ module rshark_tilemap (
     logic        map_valid;
     logic [10:0] map_gc_pair;    // gc >> 1 held in map_q
 
+    wire [8:0]  scrolly = {r[4][0], r[3]};
+    wire [9:0]  tx0     = 10'd64 + r[0];
+    wire [9:0]  txl     = 10'd447 + r[0];
+
+    // Map cache: tilemap entries are ROM and a tile row serves 16 lines, so each layer keeps the
+    // (up to 13) column-pair bursts of its current tile row, tagged {row, first pair}.
+    logic [4:0]  ctag_row [4];
+    logic [10:0] ctag_p0  [4];
+    logic [15:0] cvalid   [4];
+    logic [5:0]  c_raddr, c_waddr;
+    logic        c_we;
+    logic [63:0] c_q;
+    rshark_sdpram #(.AW(6), .DW(64)) mcache (
+        .clk(clk), .w_addr(c_waddr), .we(c_we), .din(mem_data), .r_addr(c_raddr), .dout(c_q));
+    wire [10:0] p0_now = ({r[1], 4'b0000} + {6'd0, tx0[9:4]}) >> 1;
+    wire [8:0]  ty_now = y + scrolly;
+    wire [3:0]  ck     = 4'(gc[11:1] - ctag_p0[layer]);
+
     // pixel writer: 16 pixels, one per clock
     logic        w_busy;
     logic [4:0]  w_cnt;
@@ -58,9 +76,6 @@ module rshark_tilemap (
     logic        w_pri;
     wire         w_load;             // hand the fetched row to the writer (same clock as the FSM step)
 
-    wire [8:0]  scrolly = {r[4][0], r[3]};
-    wire [9:0]  tx0     = 10'd64 + r[0];
-    wire [9:0]  txl     = 10'd447 + r[0];
 
     // tilemap attribute decoding for the column being fetched
     wire [15:0] attr   = gc[0] ? map_q[47:32] : map_q[15:0];
@@ -75,9 +90,11 @@ module rshark_tilemap (
     assign w_load = st == S_PUSH && !w_busy;
 
     always_ff @(posedge clk) begin
+        c_we <= 1'b0;
         if (rst) begin
             st <= S_IDLE;
             mem_req <= 1'b0;
+            for (int i = 0; i < 4; i++) cvalid[i] <= '0;
         end else case (st)
             S_IDLE: if (start) begin
                 layer <= 2'd0;
@@ -87,8 +104,13 @@ module rshark_tilemap (
                 if (r[6][4]) begin                           // layer disabled
                     st <= S_NEXT;
                 end else begin
-                    ty        <= y + scrolly;
+                    ty        <= ty_now;
                     col       <= tx0[9:4];
+                    if (ctag_row[layer] != ty_now[8:4] || ctag_p0[layer] != p0_now) begin
+                        ctag_row[layer] <= ty_now[8:4];
+                        ctag_p0[layer]  <= p0_now;
+                        cvalid[layer]   <= '0;
+                    end
                     col_end   <= txl[9:4];
                     gc        <= {r[1], 4'b0000} + tx0[9:4];
                     map_valid <= 1'b0;
@@ -97,7 +119,10 @@ module rshark_tilemap (
             end
             S_MAP: begin
                 if (map_valid && map_gc_pair == gc[11:1]) st <= S_PIX;
-                else if (!mem_req) begin
+                else if (!mem_req && cvalid[layer][ck]) begin
+                    c_raddr <= {layer, ck};
+                    st      <= S_MAPC1;
+                end else if (!mem_req) begin
                     mem_req  <= 1'b1;
                     mem_addr <= MAP_BASE[layer] + {ty[8:4], gc[11:1], 2'b00};
                 end else if (mem_ack) begin
@@ -105,8 +130,18 @@ module rshark_tilemap (
                     map_q       <= mem_data;
                     map_valid   <= 1'b1;
                     map_gc_pair <= gc[11:1];
+                    c_we        <= 1'b1;
+                    c_waddr     <= {layer, ck};
+                    cvalid[layer][ck] <= 1'b1;
                     st          <= S_PIX;
                 end
+            end
+            S_MAPC1: st <= S_MAPC2;                          // cache read latency
+            S_MAPC2: begin
+                map_q       <= c_q;
+                map_valid   <= 1'b1;
+                map_gc_pair <= gc[11:1];
+                st          <= S_PIX;
             end
             S_PIX: begin
                 if (!mem_req) begin

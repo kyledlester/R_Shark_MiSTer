@@ -124,7 +124,7 @@ module rshark_core (
     rshark_video video (
         .clk(clk), .rst(reset), .ce_pix(ce_pix), .hcount(hcount), .vcount(vcount), .line_start(line_start),
         .hblank_in(hb), .vblank_in(vb), .hsync_in(hs), .vsync_in(vs),
-        .regs(tm_regs), .bg1_pri(bg1_pri),
+        .regs(tm_regs), .bg1_pri(bg1_pri), .flip(flip),
         .pal_we(pal_we), .pal_addr(pal_addr), .pal_wdata(pal_wdata),
         .ytab_addr(ytab_addr), .ytab_data(ytab_data), .atab_addr(atab_addr), .atab_data(atab_data),
         .tm_req(tm_req), .tm_addr(tm_addr), .tm_ack(tm_ack),
@@ -135,12 +135,18 @@ module rshark_core (
     logic        oki_req, oki_ack;
     logic [25:1] oki_addr;
     logic [15:0] dbg_lat_rd, dbg_ym, dbg_oki, dbg_zirq;
+`ifdef RSHARK_SIM_NO_SOUND
+    // simulation-only: video/CPU benches without the Z80 board
+    assign snd = '0; assign oki_req = 1'b0; assign oki_addr = '0;
+    assign {dbg_lat_rd, dbg_ym, dbg_oki, dbg_zirq} = '0;
+`else
     rshark_sound sound (
         .clk(clk), .reset(reset), .ce_4m(ce_4m), .ce_1m(ce_1m), .latch(latch),
         .rom_we(romz80_we), .rom_waddr(romz80_addr), .rom_wdata(romz80_data),
         .oki_req(oki_req), .oki_addr(oki_addr), .oki_ack(oki_ack), .oki_data(mem_rdata),
         .snd(snd),
         .dbg_latch_reads(dbg_lat_rd), .dbg_ym_writes(dbg_ym), .dbg_oki_writes(dbg_oki), .dbg_z80_irqs(dbg_zirq));
+`endif
 
     // ------------------------------------------------------------------ SDRAM
     logic [3:0]  arb_ack;

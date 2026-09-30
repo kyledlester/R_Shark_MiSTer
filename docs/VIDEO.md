@@ -55,9 +55,14 @@ tiles); w3 code; w4 bits 8-0 X; w6 bits 8-0 Y (signed 9-bit); w7 bits 3-0 colour
 Tiles are drawn row-major with code incrementing (`code % 16384`), at (X + 16*col, Y + 16*row) in
 bitmap coordinates, clipped to the visible area, no wrap. Sprite pixels
 (`gfx_8x8x4_col_2x2_group_packed_msb`): same row layout as the tilemap tiles, but each byte is two
-packed pixels, high nibble first. Flip screen (control bit 0): tilemaps flip globally, sprites use
-`sx = 498 - 16*w - sx`, `sy = 240 - 16*h - sy` and flip their tiles; not yet implemented in the
-FPGA (DIP default off).
+packed pixels, high nibble first.
+
+Flip screen (control bit 0, set by the game from the Flip Screen DIP): `tilemap_t` flips around the
+visible-area centre (`effective_rowscroll` with extent 512 / 256), i.e. display (x, y) shows the
+unflipped tilemap pixel (511 - x, 255 - y); sprites use `sx = 498 - 16*w - sx`,
+`sy = 240 - 16*h - sy` with flipped tiles, i.e. display (x, y) shows the unflipped sprite pixel
+(513 - x, 255 - y) - a 2-dot offset against the tilemaps that MAME reproduces from its formula.
+refrender.py implements both literally and matches 12/12 MAME frames captured with the DIP on.
 
 ## FPGA implementation
 
@@ -96,5 +101,17 @@ During raster line v, line v+1 is rendered (for v+1 in 8..247):
   (colour 0/15 and tile pri); else tile index, else black; palette lookup; one-dot pipeline delay
   (blank/sync delayed with it).
 
-Budget: 6144 clk_sys per line. Measured worst case in attract: 221 sprite tile-rows on one line.
-SDRAM: tiles ~152 bursts + sprites <= ~221 bursts at 8 clk_sys each = ~3000 clocks.
+Flip screen: the renderers draw logical line 255 - y for display line y, and the output side
+reads the tile buffer at 511 - x and the sprite buffer at 513 - x.
+
+Budget: 6144 clk_sys per line. Load reduction:
+* map cache: tilemap entries are ROM and one tile row serves 16 lines; each layer keeps its row's
+  13 column-pair bursts (tag {row, first pair}), so map fetches happen on 1 line in 16;
+* sprite tiles entirely outside x 64..449 are not fetched (MAME clips them);
+* the SDRAM arbiter issues the next client's request as soon as the controller completes the
+  previous access.
+
+Measured (sim m11, production path): busiest attract frame 2760 (197 visible sprite tile-rows on
+one line) 4291 clocks = 70 % of the line; frame 1800 2617; flipped frame 3000 3152. The busiest
+gameplay frame of a MAME demo run (frames 600-7200, coin/start/autofire) has 164 visible tile-rows
+on its worst line.

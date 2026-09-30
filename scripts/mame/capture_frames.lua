@@ -46,7 +46,10 @@ local function wfile(path, data) local f = io.open(path, "wb"); f:write(data); f
 emu.register_frame_done(function()
   local fn = scr:frame_number()
   for _, e in ipairs(inputs) do
-    if e.frame == fn then m.ioport.ports[":" .. e.port].fields[e.field]:set_value(e.value) end
+    if e.frame == fn then
+      local f = m.ioport.ports[":" .. e.port].fields[e.field]
+      if f.type_class == "dipswitch" or f.type_class == "config" then f.user_value = e.value else f:set_value(e.value) end
+    end
   end
   if want[fn - pixdelay] then
     wfile(string.format("%s/f%05d/pixels.bin", dir, fn - pixdelay), scr:pixels())

@@ -103,9 +103,18 @@ module rshark_sprites (
             S_FETCH: begin
                 if (!mem_req) begin
                     logic [13:0] c;
-                    c = base_code[13:0] + scol;
-                    mem_req  <= 1'b1;
-                    mem_addr <= {5'b00000, c, hit_dy[3:0], 2'b00};
+                    logic [9:0]  x0;
+                    c  = base_code[13:0] + scol;
+                    x0 = {1'b0, sx} + {2'b00, scol, 4'b0000};
+                    // tiles entirely outside bitmap x 64..449 (the visible area, and its flipped
+                    // read window) are never shown: skip their fetch
+                    if (x0 + 10'd15 < 10'd64 || x0 > 10'd449) begin
+                        if (scol == sw) st <= S_SCAN;
+                        else scol <= scol + 4'd1;
+                    end else begin
+                        mem_req  <= 1'b1;
+                        mem_addr <= {5'b00000, c, hit_dy[3:0], 2'b00};
+                    end
                 end else if (mem_ack) begin
                     mem_req <= 1'b0;
                     st      <= S_PUSH;

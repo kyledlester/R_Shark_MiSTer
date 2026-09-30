@@ -26,6 +26,9 @@ spec() {
          echo "m11_render_tb||||rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $VIDEO rtl/rshark/rshark_sdram_arb.sv build/sim/sdram_sim.sv sim/models/sdr_sdram_model.sv sim/tb/m11_render_tb.sv" ;;
     m15) python scripts/mk_sdram_sim.py build/sim/sdram_sim.sv; mkdir -p build/sim/frames
          echo "m15_system_tb|$T80 rtl/vendor/t80/T80s.vhd|cpu|+define+RSHARK_SIM_ROM=\"local/sim/maincpu.hex\" +define+RSHARK_SIM_Z80ROM=\"local/sim/audiocpu.hex\"|rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN $VIDEO rtl/rshark/rshark_sdram_arb.sv rtl/rshark/rshark_loader.sv rtl/rshark/rshark_sound.sv rtl/rshark/rshark_overlay.sv rtl/rshark/rshark_core.sv $JT51 $JT6295 build/sim/sdram_sim.sv sim/models/sdr_sdram_model.sv sim/tb/m15_system_tb.sv" ;;
+    m16) echo "m16_sound_tb|$T80 rtl/vendor/t80/T80s.vhd||+define+RSHARK_SIM_Z80ROM=\"local/sim/audiocpu.hex\"|rtl/rshark/rshark_ram.sv rtl/rshark/rshark_sound.sv $JT51 $JT6295 sim/tb/m16_sound_tb.sv" ;;
+    m2)  python scripts/mk_sdram_sim.py build/sim/sdram_sim.sv
+         echo "m2_loader_tb||||rtl/rshark/rshark_loader.sv rtl/rshark/rshark_sdram_arb.sv build/sim/sdram_sim.sv sim/models/sdr_sdram_model.sv sim/tb/m2_loader_tb.sv" ;;
     *) echo "" ;;
   esac
 }
@@ -45,6 +48,7 @@ run() {
   # only for the imported CPU (see rtl/vendor/fx68k/ORIGIN.md).
   if [ -n "$cpu" ]; then "$MS/vlog.exe" -sv -quiet -suppress 7061 -work "$lib" $FX68K >> "$log" 2>&1 || { echo "FAIL $t: vlog fx68k (see $log)"; return 1; }; fi
   "$MS/vlog.exe" -sv -quiet -work "$lib" $defs ${VLOGDEFS:-} +incdir+sim/tb $sv >> "$log" 2>&1 || { echo "FAIL $t: vlog (see $log)"; grep -E "Error|error" "$log" | head -20; return 1; }
+  [ -n "${SIM_COMPILE_ONLY:-}" ] && { echo "COMPILED $t ($lib)"; return 0; }
   "$MS/vsim.exe" -c -suppress 8315,8360 -L altera_mf_ver -L altera_ver -lib "$lib" "$top" "$@" -do 'run -all; quit -f' >> "$log" 2>&1
   r=$(grep -E "^# (PASS|FAIL) " "$log" | tail -1 | sed 's/^# //')
   if [ -z "$r" ]; then echo "FAIL $t: no verdict (see $log)"; grep -E "Error|Fatal" "$log" | head -10; return 1; fi

@@ -21,6 +21,7 @@ module rshark_video (
 
     input  logic [255:0] regs,
     input  logic         bg1_pri,
+    input  logic         flip,              // control byte bit 0 (MAME flip_screen)
 
     // palette CPU write port
     input  logic   [1:0] pal_we,
@@ -53,7 +54,8 @@ module rshark_video (
     // ------------------------------------------------------------------ render start
     wire [7:0] next_line = vcount + 8'd1;      // vcount is already the new line at line_start
     logic      render_start, render_pend, abort;
-    logic [7:0] render_y;
+    logic [7:0] render_y;             // logical (unflipped) line to render
+    logic      render_half;           // line-buffer half = parity of the display line
     logic      tm_busy, sp_busy;
 
     // An engine still busy at the next line start is aborted (reset) one clock before it restarts.
@@ -69,7 +71,10 @@ module rshark_video (
                     abort <= 1'b1;
                 end
                 render_pend <= 1'b1;
-                render_y    <= next_line;
+                // Flip screen (MAME tilemap set_flip_all + draw_sprites flip branch): display
+                // line y shows logical line 255 - y; see the read addresses below for x.
+                render_y    <= flip ? 8'd255 - next_line : next_line;
+                render_half <= next_line[0];
             end
             render_start <= render_pend;
         end
@@ -96,12 +101,13 @@ module rshark_video (
 
     // ------------------------------------------------------------------ line buffers
     // port A: output side (read, then clear), port B: renderer (write)
-    wire        wr_half = render_y[0];
+    wire        wr_half = render_half;
     wire        rd_half = vcount[0];
     logic [12:0] tq;
     logic [7:0]  sq [2];
     logic        clr;                 // clear the entry read one clock earlier
-    logic [8:0]  rd_x;
+    logic [8:0]  rd_x;                // tile line-buffer x
+    logic [8:0]  rd_sx;               // sprite line-buffer x
 
     rshark_tdpram #(.AW(10), .DW(13)) tlb (
         .clk(clk),
@@ -110,7 +116,7 @@ module rshark_video (
     for (genvar b = 0; b < 2; b++) begin : slb_banks
         rshark_tdpram #(.AW(9), .DW(8), .FILL(8'hFF)) slb (
             .clk(clk),
-            .a_addr({rd_half, rd_x[8:1]}), .a_we(clr && rd_x[0] == b[0]), .a_din(8'hFF), .a_dout(sq[b]),
+            .a_addr({rd_half, rd_sx[8:1]}), .a_we(clr && rd_sx[0] == b[0]), .a_din(8'hFF), .a_dout(sq[b]),
             .b_addr({wr_half, slb_addr[b]}), .b_we(slb_we[b]), .b_din(slb_data[b]));
     end
 
@@ -136,7 +142,10 @@ module rshark_video (
     always_ff @(posedge clk) begin
         clr <= 1'b0;
         if (ce_pix) begin
-            rd_x   <= hcount;
+            // flipped: tiles mirror around the visible centre (x -> 511 - x); MAME's flipped
+            // sprite formula sx = 498 - 16*w - sx lands them 2 dots further (x -> 513 - x)
+            rd_x   <= flip ? 9'd511 - hcount : hcount;
+            rd_sx  <= flip ? 9'd513 - hcount : hcount;
             ph     <= 4'd1;
             vis_d1 <= !hblank_in && !vblank_in;
             // present the colour computed for the previous dot, with the previous dot's timing
@@ -149,7 +158,7 @@ module rshark_video (
                 4'd2: begin                          // line-buffer data valid for rd_x
                     logic [7:0] s;
                     logic       spr_vis;
-                    s = sq[rd_x[0]];
+                    s = sq[rd_sx[0]];
                     spr_vis = s[3:0] != 4'hF && !((s[7:4] == 4'h0 || s[7:4] == 4'hF) && tq[11]);
                     pal_raddr <= spr_vis ? {3'b000, s} : tq[10:0];
                     black_d2  <= !spr_vis && !tq[12];

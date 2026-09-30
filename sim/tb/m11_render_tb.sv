@@ -64,7 +64,7 @@ module m11_render_tb;
     rshark_video video (
         .clk(clk), .rst(rst), .ce_pix(ce_pix), .hcount(hc), .vcount(vc), .line_start(ls),
         .hblank_in(hb), .vblank_in(vb), .hsync_in(hs), .vsync_in(vs),
-        .regs(regs), .bg1_pri(ctrl[4]),
+        .regs(regs), .bg1_pri(ctrl[4]), .flip(ctrl[0]),
         .pal_we(pal_we), .pal_addr(pal_addr), .pal_wdata(pal_wdata),
         .ytab_addr(ytab_addr), .ytab_data(ytab_data), .atab_addr(atab_addr), .atab_data(atab_data),
         .tm_req(tm_req), .tm_addr(tm_addr), .tm_ack(tm_ack),

@@ -37,7 +37,7 @@ module rshark_loader (
 );
     localparam logic [25:1] MAP_BASE [4] = '{25'h300000, 25'h340000, 25'h380000, 25'h3C0000};
 
-    typedef enum logic [2:0] {IDLE, W1, W2, Z2, DONE} st_t;
+    typedef enum logic [2:0] {IDLE, W1, W2, W3, Z2, DONE} st_t;
     st_t st;
     logic [26:0] a;
     logic [15:0] d;
@@ -111,9 +111,9 @@ module rshark_loader (
                     st <= DONE;
             end
             W2: if (mem_ack) begin
+                mem_req <= 1'b0;                              // drop req after every ack
                 if (a >= 27'h700000 && a < 27'h780000 && !second) begin
-                    // second colour of the word: entry i+1 (the arbiter ignores req for one clock
-                    // after an ack, so req may stay high with the new address)
+                    // second colour of the word: entry i+1
                     logic [1:0]  layer;
                     logic [16:0] i;
                     layer = 2'd3 - a[18:17];
@@ -121,10 +121,13 @@ module rshark_loader (
                     mem_addr  <= MAP_BASE[layer] + {7'd0, map_pos(i), 1'b1};
                     mem_wdata <= {8'h00, d[15:8]};
                     second    <= 1'b1;
-                end else begin
-                    mem_req <= 1'b0;
-                    st      <= DONE;
-                end
+                    st        <= W3;
+                end else
+                    st <= DONE;
+            end
+            W3: begin
+                mem_req <= 1'b1;
+                st      <= W2;
             end
             Z2: begin
                 romz80_we   <= 1'b1;

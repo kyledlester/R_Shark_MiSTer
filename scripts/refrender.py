@@ -124,8 +124,7 @@ def tile_layer(name, regs, color_off):
 
 def render(pal, spr, regs, ctrl):
     """Returns the 384x240 RGB image and the full-bitmap palette index / priority maps."""
-    if ctrl & 1:
-        raise NotImplementedError("flip screen")
+    flip = bool(ctrl & 1)
     idx = np.full((H, W), 2048, np.int64)          # bitmap.fill(black_pen)
     pri = np.zeros((H, W), np.int64)               # screen.priority().fill(0)
     for name, base, trans, coff in LAYERS:
@@ -133,6 +132,9 @@ def render(pal, spr, regs, ctrl):
         pens, colour, en = tile_layer(name, regs, coff)
         if not en:
             continue
+        if flip:   # tilemap_t flip around the visible-area centre: (x, y) <- (511 - x, 255 - y)
+            pens = pens[::-1, ::-1]
+            colour = colour[::-1, ::-1]
         opaque = np.ones_like(pens, bool) if trans is None else pens != trans
         idx[opaque] = base + colour[opaque].astype(np.int64) * 16 + pens[opaque]
         pri[opaque] |= lp
@@ -150,10 +152,17 @@ def render(pal, spr, regs, ctrl):
         sy = int(s[6] & 0x1ff)
         if sy & 0x100:
             sy -= 0x200
+        if flip:   # dooyong_68k_state::draw_sprites flip branch
+            sx = 498 - (16 * width) - sx
+            sy = 240 - (16 * height) - sy
         for y in range(height + 1):
             for x in range(width + 1):
                 t = tiles[code % tiles.shape[0]]
-                x0, y0 = sx + 16 * x, sy + 16 * y
+                if flip:
+                    t = t[::-1, ::-1]
+                    x0, y0 = sx + 16 * (width - x), sy + 16 * (height - y)
+                else:
+                    x0, y0 = sx + 16 * x, sy + 16 * y
                 for yy in range(16):
                     py = y0 + yy
                     if py < VY0 or py >= VY1:
