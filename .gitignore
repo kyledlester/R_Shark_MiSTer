@@ -42,6 +42,3 @@ Thumbs.db
 *.qarlog
 /PLLJ_PLLSPE_INFO.txt
 
-# R-Shark: local MAME source/cores, ROM-derived images, captures
-/Releases/*.rbf
-!/Releases/.keep

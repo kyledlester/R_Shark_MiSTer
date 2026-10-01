@@ -1,9 +1,9 @@
 // R-Shark MiSTer core -- CRT Adjust glue.
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Copied from the owner's Neratte Chu core (rtl/nrc/nrc_crt_adjust.sv, itself a port of the owner's
-// hardware-confirmed Namco NA-1/NA-2 integration); only the module name and the raster parameters
-// passed by RShark.sv differ. Wraps the UNMODIFIED upstream rtl/vendor/crt_adjust.sv
+// Adapted from the owner's Neratte Chu core (rtl/nrc/nrc_crt_adjust.sv, itself a port of the owner's
+// hardware-confirmed Namco NA-1/NA-2 integration): module name, raster parameters (RShark.sv) and the
+// H-Position limit table, which depends on the raster geometry. Wraps the UNMODIFIED upstream rtl/vendor/crt_adjust.sv
 // (MiSTer-CRT-Adjust, Umberto Parisi / rmonic79, GPL-3.0-or-later).
 //   [96]      CRT Adjust Off / On (0 = Off = default = TRUE bypass: native stream, zero latency)
 //   [116:112] H-Size OSD index -> -12..+10, one step = 1 % (+ = wider)
@@ -54,24 +54,28 @@ module rshark_crt_adjust #(
     end
     assign active = crt_on && sd_off;
 
-    // H-Position limit when widening (checked by sim/tb/m17_crt_tb.sv over every H-Size): the
-    // module reads the line buffer from its (shifted) HSync at 1/(1 - h/100) dots per pixel; a left
-    // shift of 6p moves the active start to 86 + 6p dots after it, so the picture ends at
-    // (406 + 6p) / (1 - h/100) and must stay before the next HSync (454). Largest left step count:
-    // floor((454 (1 - h/100) - 406) / 6) = 7,6,5,4,4,3,2,1,1,0 for h = +1..+10; beyond it the picture
-    // stops moving (same policy as the owner's NB-1 glue). Narrowing and right shifts need no limit.
+    // H-Position limits for the R-Shark raster (512 dots: active 64..447, HSync rises at 468; checked
+    // by sim/tb/m17_crt_tb.sv over every H-Size at both H-Position extremes). In HPOS_SYNCSHIFT the
+    // module records each line from its shifted HSync (rise at 468 + 6p) to the next, so:
+    //  * the shifted HSync must not fall inside the active area: 468 + 6p >= 448  ->  p >= -3
+    //    (only 20 dots of front porch; with p = -4 the line window inverts and no picture is shown);
+    //  * widened read-out ends at (492 - 6p) / (1 - h/100) and must end before the next HSync (511).
+    // Lowest allowed p: -3 for h <= 0, then -2,-1,0,1,2,2,3,4,5,6 for h = +1..+10 (wider pictures need
+    // to sit further right). Settings beyond the limit are clamped, i.e. the picture stops moving
+    // (same policy as the owner's NB-1 / Neratte Chu glue).
     reg signed [3:0] lmax;
     always_comb begin
         case (hsize_s)
-            5'sd1:  lmax = -4'sd7;
-            5'sd2:  lmax = -4'sd6;
-            5'sd3:  lmax = -4'sd5;
-            5'sd4, 5'sd5: lmax = -4'sd4;
-            5'sd6:  lmax = -4'sd3;
-            5'sd7:  lmax = -4'sd2;
-            5'sd8, 5'sd9: lmax = -4'sd1;
-            5'sd10: lmax = 4'sd0;
-            default: lmax = -4'sd8;
+            5'sd1:  lmax = -4'sd2;
+            5'sd2:  lmax = -4'sd1;
+            5'sd3:  lmax = 4'sd0;
+            5'sd4:  lmax = 4'sd1;
+            5'sd5, 5'sd6: lmax = 4'sd2;
+            5'sd7:  lmax = 4'sd3;
+            5'sd8:  lmax = 4'sd4;
+            5'sd9:  lmax = 4'sd5;
+            5'sd10: lmax = 4'sd6;
+            default: lmax = -4'sd3;
         endcase
     end
     reg signed [3:0] hpos_c = 4'sd0;

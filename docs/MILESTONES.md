@@ -8,7 +8,7 @@
 | M3 | FX68K boot from the real ROM | done | `sim.sh m3`: 200,000 bus transactions identical to MAME |
 | M4 | Complete 68000 address decoder | done | 328,777 transactions identical (boot RAM tests, I/O, video registers) |
 | M5 | Interrupts, frame timing, sprite buffering | done | interrupts on MAME's lines/transactions; divergence only in sub-us IACK timing (KNOWN_ISSUES 6) |
-| M6 | Inputs / DIPs | done (sim) | `sim.sh m6`: 27 checks (all joystick/button/coin/start/service bits, DIP download); hardware test pending |
+| M6 | Inputs / DIPs | done | `sim.sh m6` (input bits, DIP download, game select); owner hardware test |
 | M7 | Palette | done | pixel-exact renders |
 | M8 | Dooyong ROM tilemap research | done | refrender.py pixel-exact on 60 attract, 17 gameplay, 12 flipped MAME frames |
 | M9 | Video timing | done | m0; raster = MAME logical raster |
@@ -17,9 +17,11 @@
 | M16 | Z80 sound CPU | done (sim) | `sim.sh m16`: 3 s, 10,419 YM/OKI writes identical to MAME in order |
 | M17 | YM2151 | done (sim) | audio vs `mame -wavwrite`: envelope corr 0.912, spectrum corr 0.929 |
 | M18 | OKI6295 | done (sim) | 8.2 s run: OKI phrases play from 7.13 s; audio 7.1-8.2 s level ratio 1.00, envelope corr 0.961 vs MAME |
-| M19 | Mix / playable gate | built, awaiting hardware | `Releases/RShark_20260930.rbf` (timing closed) + MRA; mix = MAME gains; physical MiSTer test is the next information source |
-| M22 | Timing closure | done | build 3: clk_sys +0.438 ns setup, all setup/hold positive; 82 % ALMs, 512/553 M10K |
-| M20, M21, M23 | CRT pass, accuracy, release | pending hardware feedback | |
+| M19 | Playable core | done | owner hardware test: R-Shark boots, attract, gameplay, controls, sound |
+| M22 | Timing closure | done | every release build: all setup/hold slacks positive (see the release build record) |
+| M20 | CRT pass | partial | CRT Adjust fixed and verified in simulation (`sim.sh m17`, every setting); PCB timing still unmeasured |
+| M21 | Accuracy / stability | done (sim) + owner play testing | |
+| M23 | Release candidate | beta | `Releases/` RBF, four MRAs, docs |
 
 ## Super-X support (shared RBF)
 
@@ -31,10 +33,10 @@
 | SX4 | ROM download | done | `sim.sh m2 +STREAM=local/superx/superx.rom +SIMDIR=local/superx/sim` PASS |
 | SX5 | Video | done | refrender: attract 59/60 + 12/12 flipped + 60/60 gameplay pixel-exact (the remaining attract frame differs only by MAME's readout-time palette); RTL `m11` 7/7 Super-X frames (attract, flipped, gameplay boss scene) pixel-exact; `m15x` whole board frames 55-62 pixel-exact |
 | SX6 | Sound | done | `m16x` 11 s: 23,945/23,945 chip writes identical to MAME; audio 0.4-11 s ratio 0.99, envelope 0.992, spectrum 0.989; OKI window ratio 1.04, envelope 0.953 |
-| SX7 | Controls / gameplay on the FPGA | done (sim) | `m15x +INPUTS`: coin, start, autofire and movement scripted identically into MAME and the FPGA; the FPGA starts the game and stays in lock-step for 240 frames; gameplay frames 230-240: 10/11 pixel-exact, the 11th differs only by sprite entry 167, which the CPU rewrote at the vblank-copy instant (FPGA frame == MAME state with that entry one frame older: 0 differences) |
-| SX8 | Shared RBF | done | built from a6bd2d9: clk_sys +1.053 ns, clk_snd +4.217 ns, all hold positive; 82 % ALMs, 515/553 M10K |
+| SX7 | Controls / gameplay on the FPGA | done (sim + owner hardware test) | `m15x +INPUTS`: coin, start, autofire and movement scripted identically into MAME and the FPGA; the FPGA starts the game and stays in lock-step for 240 frames; gameplay frames 230-240: 10/11 pixel-exact, the 11th differs only by sprite entry 167, which the CPU rewrote at the vblank-copy instant (FPGA frame == MAME state with that entry one frame older: 0 differences) |
+| SX8 | Shared RBF | done (owner hardware test) | built from a6bd2d9: clk_sys +1.053 ns, clk_snd +4.217 ns, all hold positive; 82 % ALMs, 515/553 M10K |
 
-## Clone sets (`mra/_Alternatives/`)
+## Clone sets (`MRA/_Alternatives/`)
 
 | Set | Evidence |
 | --- | --- |

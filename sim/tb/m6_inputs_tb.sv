@@ -20,7 +20,7 @@ module m6_inputs_tb;
         .ioctl_addr(ioctl_addr), .ioctl_dout(ioctl_dout), .ioctl_wait(ioctl_wait),
         .sd_addr(), .sd_din(), .sd_be(), .sd_req(), .sd_rnw(), .sd_dout(sd_dout), .sd_ready(1'b0),
         .joy0(joy0), .joy1(joy1), .test_pattern(1'b0), .dbg_overlay(1'b0),
-        .ce_pix(), .rgb(), .hblank(), .vblank(), .hsync(), .vsync(), .snd());
+        .ce_pix(), .rgb(), .hblank(), .vblank(), .hsync(), .vsync(), .vb_next(), .snd());
 
     int errors = 0, checks = 0;
     task automatic expect16(input string what, input logic [15:0] got, input logic [15:0] exp);

@@ -9,6 +9,7 @@ D = accuracy item that can wait.
 | 2 | D | Tilemap registers and palette latched at vblank (the games write them at line ~120-131). Real hardware behaviour unverified. Relative to MAME, scroll/palette appear together with the sprites of the same game tick | design decision, docs/VIDEO.md |
 | 13 | D | A sprite entry rewritten within ~1 us of the vblank copy can land one frame later than in MAME (CPU timing differs from MAME's by < 1 us, see 6); seen once in 240 Super-X gameplay frames (one sprite, one frame) | expected |
 | 12 | D | Super-X SWA:1 is labelled "Unknown (SWA:1)" as in MAME (board documentation calls it service mode; MAME notes it has no effect) | as MAME |
+| 14 | C | CRT Adjust: turning it On made the OSD/picture disappear for good (owner, both games). Cause: the glue's vertical blank comes from the core's "next line" vblank, which was tied to 0, so the adjusted stream had no vertical blank and the scaler never saw a frame; separately, the H-Position limits were Neratte Chu's (455-dot raster) and a left shift past 3 steps put HSync inside the picture (no picture at all) | fixed; `sim.sh m17` checks every H-Size at both H-Position extremes, V-Shift, line/frame timing, 16 vblank lines and the full picture |
 | 3 | D | Flip screen | implemented, m11 pixel-exact on flipped MAME frames |
 | 4 | D | Tilemap registers r2, r5, r7 and control bit 5 have no known function (stored, unused - as MAME) | as MAME |
 | 5 | D | 0x0C0018/0x0C001A writes (watchdog?) ignored - as MAME | as MAME |

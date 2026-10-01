@@ -121,7 +121,7 @@ GAMES = {
 import copy as _copy
 GAMES["rsharka"] = dict(
     _copy.deepcopy(GAMES["rshark"]), parent="rshark",
-    name="R-Shark (set 2)", mra="_Alternatives/R-Shark (set 2).mra",
+    name="R-Shark (set 2)", mra="_Alternatives/_R-Shark/R-Shark (set 2).mra",
     # files shared with rshark use MAME's merge names (as in split and merged sets)
     roms={
         "9.1":   (0x20000, 0xdafa38df), "8.2": (0x20000, 0x31bd7b90),
@@ -151,7 +151,7 @@ GAMES["rsharka"] = dict(
     })
 GAMES["superxm"] = dict(
     _copy.deepcopy(GAMES["superx"]), parent="superx",
-    name="Super-X (Mitchell)", manufacturer="Dooyong (Mitchell license)", mra="_Alternatives/Super-X (Mitchell).mra")
+    name="Super-X (Mitchell)", manufacturer="Dooyong (Mitchell license)", mra="_Alternatives/_Super-X/Super-X (Mitchell).mra")
 _sx = GAMES["superxm"]
 for _old, _new, _crc in (("2.3m", "2_m.3m", 0x41c50aac), ("3.3l", "3_m.3l", 0x6738b703), ("1.5u", "1_m.5u", 0x319fa632)):
     _sx["roms"] = {(_new if k == _old else k): ((v[0], _crc) if k == _old else v) for k, v in _sx["roms"].items()}
@@ -422,7 +422,7 @@ def main():
     ap.add_argument("--mra", default=None)
     a = ap.parse_args()
     g = GAMES[a.game]
-    mra = a.mra or os.path.join(ROOT, "mra", g["mra"])
+    mra = a.mra or os.path.join(ROOT, "MRA", g["mra"])
     if a.cmd == "mra":
         path = a.out or mra
         os.makedirs(os.path.dirname(path), exist_ok=True)

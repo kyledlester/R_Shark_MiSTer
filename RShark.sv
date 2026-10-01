@@ -72,9 +72,9 @@ localparam CONF_STR = {
 	"P2,Pause options;",
 	"P2O[13],Pause when OSD is open,Off,On;",
 	"P2O[14],Dim video after 10s,On,Off;",
-	"-;",
-	"O[2],Debug overlay,Off,On;",
-	"O[4],Video test pattern,Off,On;",
+	"P3,Debug;",
+	"P3O[2],Debug overlay,Off,On;",
+	"P3O[4],Video test pattern,Off,On;",
 	"-;",
 	"T[0],Reset;",
 	"R[0],Reset and close OSD;",
@@ -154,7 +154,7 @@ wire [63:0] sd_dout;
 
 wire        ce_pix;
 wire [23:0] rgb;
-wire        hblank, vblank, hsync, vsync;
+wire        hblank, vblank, hsync, vsync, vb_next;
 wire signed [15:0] snd;
 
 rshark_core core
@@ -187,6 +187,7 @@ rshark_core core
 	.vblank(vblank),
 	.hsync(hsync),
 	.vsync(vsync),
+	.vb_next(vb_next),
 	.snd(snd)
 );
 
@@ -271,7 +272,7 @@ rshark_crt_adjust #(.SYS_HZ(94_371_840), .PIX_DIV(12), .HTOTAL(512), .VTOTAL(256
 	.vblank_in(vblank),
 	.hsync_in(hsync),
 	.vsync_in(vsync),
-	.vb_next_in(1'b0),
+	.vb_next_in(vb_next),
 	.ce_out(av_ce),
 	.rgb_out(av_rgb),
 	.hblank_out(av_hb),

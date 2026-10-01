@@ -41,6 +41,7 @@ module rshark_core (
     output logic        vblank,
     output logic        hsync,
     output logic        vsync,
+    output logic        vb_next,        // vertical blank of the line after the current output line
     output logic signed [15:0] snd
 );
     // ------------------------------------------------------------------ clocks / raster
@@ -196,5 +197,8 @@ module rshark_core (
         end else
             rgb <= ovl_rgb;
         {hblank, vblank, hsync, vsync} <= {vhb, vvb, vhs, vvs};
+        // the output stream lags the raster counters by a few dots, so vcount is still the output
+        // line when its active area ends (where rshark_crt_adjust samples this)
+        vb_next <= !((vcount + 8'd1) >= 8'd8 && (vcount + 8'd1) < 8'd248);
     end
 endmodule

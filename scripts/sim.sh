@@ -35,6 +35,7 @@ spec() {
     m3x) echo "m3_boot_tb||cpu|+define+RSHARK_SIM_ROM=\"local/superx/sim/maincpu.hex\"|rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN sim/tb/m3_boot_tb.sv" ;;
     m3a) echo "m3_boot_tb||cpu|+define+RSHARK_SIM_ROM=\"local/rsharka/sim/maincpu.hex\"|rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN sim/tb/m3_boot_tb.sv" ;;
     m3xm) echo "m3_boot_tb||cpu|+define+RSHARK_SIM_ROM=\"local/superxm/sim/maincpu.hex\"|rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN sim/tb/m3_boot_tb.sv" ;;
+    m17) echo "m17_crt_tb||||rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv rtl/vendor/crt_adjust.sv rtl/rshark/rshark_crt_adjust.sv sim/tb/m17_crt_tb.sv" ;;
     m6)  echo "m6_inputs_tb|$T80 rtl/vendor/t80/T80s.vhd|cpu||rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN $VIDEO rtl/rshark/rshark_sdram_arb.sv rtl/rshark/rshark_loader.sv rtl/rshark/rshark_sound.sv rtl/rshark/rshark_overlay.sv rtl/rshark/rshark_core.sv $JT51 $JT6295 sim/tb/m6_inputs_tb.sv" ;;
     *) echo "" ;;
   esac

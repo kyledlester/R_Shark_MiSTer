@@ -1,31 +1,43 @@
 # R-Shark / Super-X (Dooyong) for MiSTer
 
-MiSTer FPGA core for two Dooyong vertical shoot 'em ups on the same 68000 board (68000 @ 8 MHz,
-Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers, buffered 16x16 sprites):
+MiSTer FPGA core for Dooyong's 68000-based vertical shoot 'em ups **R-Shark** (1995) and
+**Super-X** (1994): 68000 @ 8 MHz, Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers and
+buffered 16x16 sprites. One core (`RShark`) runs every supported set; each MRA tells the core which
+game it is loading.
 
-| Game | MAME set | MRA | Status |
-| --- | --- | --- | --- |
-| R-Shark (set 1), 1995 | `rshark` | `mra/R-Shark (set 1).mra` | working on hardware (owner report) |
-| Super-X (NTC), 1994 | `superx` | `mra/Super-X (NTC).mra` | verified in simulation against MAME 0.289 (boot, attract, gameplay, sound); hardware test pending |
-| R-Shark (set 2), 1995 | `rsharka` (clone of `rshark`) | `mra/_Alternatives/R-Shark (set 2).mra` | verified in simulation against MAME 0.289; hardware test pending |
-| Super-X (Mitchell), 1994 | `superxm` (clone of `superx`) | `mra/_Alternatives/Super-X (Mitchell).mra` | verified in simulation against MAME 0.289; hardware test pending |
+**Status: beta.** All four sets below boot, run their attract mode and are playable on MiSTer
+hardware with graphics, controls and sound (owner-tested). In development every set was also
+checked against MAME 0.289 in simulation (CPU bus traces, pixel-exact frames, sound-chip register
+streams and audio) - see [docs/MILESTONES.md](docs/MILESTONES.md).
 
-One RBF (`RShark`) runs both; each MRA tells the core which game it is loading (a game-select
-byte on ioctl index 1) and the core uses that game's 68000 address map.
+| Game | MAME set | MRA |
+| --- | --- | --- |
+| R-Shark (set 1), 1995 | `rshark` | `MRA/R-Shark (set 1).mra` |
+| Super-X (NTC), 1994 | `superx` | `MRA/Super-X (NTC).mra` |
+| R-Shark (set 2), 1995 | `rsharka` (clone of `rshark`) | `MRA/_Alternatives/_R-Shark/R-Shark (set 2).mra` |
+| Super-X (Mitchell), 1994 | `superxm` (clone of `superx`) | `MRA/_Alternatives/_Super-X/Super-X (Mitchell).mra` |
 
-ROMs are not included. Supply your own `rshark.zip` / `superx.zip` (MAME 0.289 sets; `mame
--verifyroms rshark superx` = good).
+## Quick start
 
-## Installation
+1. Copy the newest `Releases/RShark_YYYYMMDD.rbf` to **`/media/fat/_Arcade/cores/`** (delete older
+   `RShark_*.rbf` files there).
+2. Copy the MRA files from `MRA/` to **`/media/fat/_Arcade/`**, and the `_R-Shark` / `_Super-X`
+   folders from `MRA/_Alternatives/` to **`/media/fat/_Arcade/_alternatives/`**.
+3. Put the MAME ROM zips (MAME 0.289 sets) in **`/media/fat/games/mame/`**.
+4. Load a game from the **Arcade** menu.
 
-1. Copy `Releases/RShark_YYYYMMDD.rbf` to `/media/fat/_Arcade/cores/` (remove older `RShark_*.rbf`).
-2. Copy both MRAs from `mra/` to `/media/fat/_Arcade/`, and the alternative sets from
-   `mra/_Alternatives/` to `/media/fat/_Arcade/_alternatives/` (optional). Use the new R-Shark MRA too: it now sends
-   the game-select byte.
-3. Copy `rshark.zip` and/or `superx.zip` to `/media/fat/games/mame/` (the clone MRAs also need
-   `rsharka.zip` / `superxm.zip`; split and merged sets work: files shared with the parent use
-   MAME's merge names and are found in the parent zip).
-4. Load *R-Shark (set 1)* or *Super-X (NTC)* from the Arcade menu.
+ROMs are not included. You must supply your own.
+
+### ROM sets
+
+* `rshark.zip`, `superx.zip`: the parent sets (`mame -verifyroms rshark superx` = good).
+* `rsharka.zip`, `superxm.zip`: **split or merged** clone sets. The clone MRAs look in the clone zip
+  first and then in the parent zip, and name the files shared with the parent by MAME's merge names
+  (`rse4.bin`, ...), so the parent zip must be present. A *non-merged* `rsharka.zip` that stores the
+  shared files under the clone's own names (`4.19`, ...) will not load.
+
+If you previously installed R-Shark from this repository, replace its MRA too: every MRA now sends
+a game-select byte, and an old R-Shark MRA can leave the core in Super-X mode after a Super-X game.
 
 ## Controls
 
@@ -34,23 +46,40 @@ ROMs are not included. Supply your own `rshark.zip` / `superx.zip` (MAME 0.289 s
 | 8-way joystick | D-pad / stick |
 | Button 1 (shot) | A |
 | Button 2 (bomb) | B |
-| Buttons 3, 4 | X, Y (unused by the game as far as known) |
+| Buttons 3, 4 | X, Y (not used by the games as far as known) |
 | Start | Start |
 | Coin | Select |
 | Service | R |
 | Pause (core) | L |
 
-Player 2 uses the second controller. Both games use the same controls.
+Player 2 uses the second controller. All four sets use the same controls.
 
 ## OSD
 
-* **Orientation** Vert/Horz and **Rotate CCW/CW** (HDMI; the game is rotated counter-clockwise).
-* **DIP switches** (from each MRA, as MAME defines them): coinage, lives, difficulty, continue, demo
-  sounds, flip screen, and SWA:1 (R-Shark: service mode; Super-X: "Unknown (SWA:1)" - documented as
-  service mode but MAME notes it has no effect).
-* **CRT Adjust** (analog 15 kHz geometry), **Scandoubler Fx**, **Pause** options.
-* **Debug overlay**: six hex counters (see below). **Video test pattern**: colour bars on the
-  native raster.
+* **Aspect ratio**, **Orientation** (Vert/Horz) and **Rotate CCW/CW** for HDMI; the games are
+  rotated counter-clockwise (MAME ROT270).
+* **Scandoubler Fx**.
+* **DIP Switches** (from each MRA, as MAME defines them): coinage (two coin-type tables), lives,
+  difficulty, continue, demo sounds, flip screen and SWA:1 (R-Shark: Service Mode; Super-X:
+  "Unknown (SWA:1)" - documented as service mode on the board, but MAME notes it has no effect).
+* **CRT Adjust** submenu (native 15 kHz analog output): H-Size, H-Position, V-Shift. Off by default.
+  Because this raster has a short front porch, H-Position only goes 3 steps left, and wider
+  H-Size settings move the picture right automatically to keep it inside the line.
+* **Pause options** submenu.
+* **Debug** submenu: hex debug overlay (below) and a colour-bar test pattern on the native raster.
+
+## Known limitations
+
+* The original PCB's video timing has never been measured; the core uses MAME's logical raster
+  (512 x 256 total, 384 x 240 active, 15.36 kHz / 60.00 Hz). Native CRT output follows it.
+* Tilemap scroll registers and the palette take effect once per frame (at vertical blank). The
+  games write them mid-frame; whether the real board latches them is unverified.
+* Very rarely a single sprite updates one frame later than in MAME (a sub-microsecond CPU timing
+  race at the sprite-buffer copy).
+* The busiest measured scene uses about 70 % of the per-line drawing budget; the debug overlay
+  counts any overruns (none seen).
+
+Details: [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
 
 ## Video
 
@@ -59,7 +88,7 @@ MAME's logical raster (the original PCB timing has not been measured; docs/VIDEO
 analog/direct-video setup the core outputs the unrotated 15 kHz picture for a rotated (vertical)
 CRT; HDMI uses the MiSTer framebuffer rotation.
 
-## Debug overlay (top-left of the rotated picture)
+## Debug overlay (OSD Debug submenu; top-left of the rotated picture)
 
 | Line | Left 16 bits | Right 16 bits |
 | --- | --- | --- |
