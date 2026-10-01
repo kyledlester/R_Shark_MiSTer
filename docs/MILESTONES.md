@@ -30,6 +30,6 @@
 | SX3 | Super-X 68000 map | done | `sim.sh m3x +SUPERX`: 260,340 bus transactions identical to MAME, 4 interrupt entries at MAME's transactions (then the known IACK timing difference) |
 | SX4 | ROM download | done | `sim.sh m2 +STREAM=local/superx/superx.rom +SIMDIR=local/superx/sim` PASS |
 | SX5 | Video | done | refrender: attract 59/60 + 12/12 flipped + 60/60 gameplay pixel-exact (the remaining attract frame differs only by MAME's readout-time palette); RTL `m11` 7/7 Super-X frames (attract, flipped, gameplay boss scene) pixel-exact; `m15x` whole board frames 55-62 pixel-exact |
-| SX6 | Sound | done | `m16x`: chip writes identical to MAME through the latch race once the Z80 starts with the 68000; audio vs MAME 0.4-11 s ratio 0.99, envelope 0.991, spectrum 0.989; OKI window 10.3-11 s ratio 1.03 |
-| SX7 | Controls / gameplay on the FPGA | in progress | `m15x` with scripted coin/start/fire/movement vs MAME with the same inputs |
-| SX8 | Shared RBF | built | timing closed (rebuild with the sound-reset change pending) |
+| SX6 | Sound | done | `m16x` 11 s: 23,945/23,945 chip writes identical to MAME; audio 0.4-11 s ratio 0.99, envelope 0.992, spectrum 0.989; OKI window ratio 1.04, envelope 0.953 |
+| SX7 | Controls / gameplay on the FPGA | done (sim) | `m15x +INPUTS`: coin, start, autofire and movement scripted identically into MAME and the FPGA; the FPGA starts the game and stays in lock-step for 240 frames; gameplay frames 230-240: 10/11 pixel-exact, the 11th differs only by sprite entry 167, which the CPU rewrote at the vblank-copy instant (FPGA frame == MAME state with that entry one frame older: 0 differences) |
+| SX8 | Shared RBF | done | built from a6bd2d9: clk_sys +1.053 ns, clk_snd +4.217 ns, all hold positive; 82 % ALMs, 515/553 M10K |

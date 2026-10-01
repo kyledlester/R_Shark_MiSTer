@@ -21,9 +21,12 @@ unmapped / ignored, as in MAME.
   fractional enable (4,000,000 / 47,185,920), `ce_1m = ce_4m / 4`. Crossings: dual-clock Z80 ROM
   (download in clk_sys), sound latch (static, sampled), OKI SDRAM reads via a level handshake,
   audio output registered back into clk_sys.
-* Reset: synchronised and stretched to 4096 clk_snd with the clock enables running, because jt51's
-  shift-register pipelines (`jt51_sh.v`) only take their reset value when reset spans as many
-  enabled clocks as they have stages.
+* Reset: synchronised, at least 4096 clk_snd counted from its assertion, with the clock enables
+  running, because jt51's shift-register pipelines (`jt51_sh.v`) only take their reset value when
+  reset spans as many enabled clocks as they have stages. Long resets (ROM downloads) end with the
+  board reset, so the Z80 starts together with the 68000 as in MAME - this matters because the
+  sound programs race the 68000 on the latch (Super-X writes 0x10 then 0x00 3.7 ms later; the Z80
+  polls every ~3.6 ms).
 
 * T80s (MiSTer T80, Mode 0) on `ce_4m` (4 MHz average, fractional from clk_sys), ROM 64K x 8 and RAM
   2K x 8 in block RAM (zero wait), WAIT_n unused.
@@ -49,7 +52,8 @@ unmapped / ignored, as in MAME.
   spectrum correlation, level ratio). 8.2 s of attract (music from 0.53 s, OKI samples from 7.13 s):
   0.5-8.2 s level ratio 0.95, 10 ms envelope correlation 0.922, log-spectrum correlation 0.977;
   OKI window 7.1-8.2 s ratio 1.00, envelope 0.961. Every 100 ms window within about 2 % of MAME.
-* Over 8.2 s, 27,924 of 27,924 chip writes occur; 15 around 7.558 s are reordered: the Z80's OKI
-  stop routine (driven by OKI busy-flag polling) interleaves differently with the YM timer IRQ
-  handler because the bench's Z80 starts 0.5 ms after MAME's (reset stretch at the bench clock).
-  The stream re-converges immediately; audio is unaffected.
+* With the Z80 starting together with the 68000: R-Shark 8.2 s, 27,924/27,924 chip writes identical
+  to MAME in order (max offset 16.9 us); OKI window 7.1-8.2 s ratio 0.99, envelope 0.988.
+* Super-X (`sim.sh m16x`, its own MAME trace): 11 s, 23,945/23,945 writes identical; audio 0.4-11 s
+  ratio 0.99, envelope 0.992, spectrum 0.989; OKI window (first sample at 10.41 s) ratio 1.04,
+  envelope 0.953.

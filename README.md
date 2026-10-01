@@ -6,7 +6,7 @@ Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers, buffered 16x16 s
 | Game | MAME set | MRA | Status |
 | --- | --- | --- | --- |
 | R-Shark (set 1), 1995 | `rshark` | `mra/R-Shark (set 1).mra` | working on hardware (owner report) |
-| Super-X (NTC), 1994 | `superx` | `mra/Super-X (NTC).mra` | verified in simulation against MAME 0.289; hardware test pending |
+| Super-X (NTC), 1994 | `superx` | `mra/Super-X (NTC).mra` | verified in simulation against MAME 0.289 (boot, attract, gameplay, sound); hardware test pending |
 
 One RBF (`RShark`) runs both; each MRA tells the core which game it is loading (a game-select
 byte on ioctl index 1) and the core uses that game's 68000 address map.
