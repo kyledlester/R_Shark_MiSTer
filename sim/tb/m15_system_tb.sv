@@ -19,6 +19,7 @@ module m15_system_tb;
     logic ce_pix; logic [23:0] rgb; logic hb, vb, hs, vs;
     logic signed [15:0] snd;
     logic ioctl_wait;
+    logic [31:0] joy0 = 0;
     logic ioctl_download = 0, ioctl_wr = 0;
     logic [15:0] ioctl_index = 0, ioctl_dout = 0;
     string sdram_img;
@@ -29,7 +30,7 @@ module m15_system_tb;
         .ioctl_wait(ioctl_wait),
         .sd_addr(sd_addr), .sd_din(sd_din), .sd_be(sd_be), .sd_req(sd_req), .sd_rnw(sd_rnw),
         .sd_dout(sd_dout), .sd_ready(sd_ready),
-        .joy0(32'd0), .joy1(32'd0), .test_pattern(1'b0), .dbg_overlay(1'b0),
+        .joy0(joy0), .joy1(32'd0), .test_pattern(1'b0), .dbg_overlay(1'b0),
         .ce_pix(ce_pix), .rgb(rgb), .hblank(hb), .vblank(vb), .hsync(hs), .vsync(vs), .snd(snd));
 
     wire [15:0] SDRAM_DQ; wire [12:0] SDRAM_A; wire [1:0] SDRAM_BA;
@@ -47,6 +48,20 @@ module m15_system_tb;
         .wen(SDRAM_nWE), .ba(SDRAM_BA), .a(SDRAM_A), .dqml(SDRAM_DQML), .dqmh(SDRAM_DQMH), .dq(SDRAM_DQ));
 
     int max_frames = 40, dump_a = -1, dump_b = -1;
+    // +INPUTS=<file>: lines "<vblank count> <joy0 hex>" (MiSTer joystick bits) applied at that vblank.
+    // MAME's capture_frames.lua sets inputs at frame_done(N) = FPGA vblank N+1.
+    int in_frame [$]; logic [31:0] in_joy [$];
+    string inputs_file;
+    initial if ($value$plusargs("INPUTS=%s", inputs_file)) begin
+        int ifd, f, r; logic [31:0] j;
+        ifd = $fopen(inputs_file, "r");
+        while ($fscanf(ifd, "%d %h
+", f, j) == 2) begin in_frame.push_back(f); in_joy.push_back(j); end
+        $fclose(ifd);
+        $display("inputs: %0d events from %s", in_frame.size(), inputs_file);
+    end
+    always @(posedge clk) foreach (in_frame[i]) if (dut.dbg_frames == in_frame[i] && joy0 !== in_joy[i] &&
+        (i == in_frame.size() - 1 || dut.dbg_frames < in_frame[i + 1])) joy0 <= in_joy[i];
     int lfd;
     initial begin
         void'($value$plusargs("FRAMES=%d", max_frames));

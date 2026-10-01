@@ -20,3 +20,16 @@
 | M19 | Mix / playable gate | built, awaiting hardware | `Releases/RShark_20260930.rbf` (timing closed) + MRA; mix = MAME gains; physical MiSTer test is the next information source |
 | M22 | Timing closure | done | build 3: clk_sys +0.438 ns setup, all setup/hold positive; 82 % ALMs, 512/553 M10K |
 | M20, M21, M23 | CRT pass, accuracy, release | pending hardware feedback | |
+
+## Super-X support (shared RBF)
+
+| ID | Item | Status | Evidence |
+| --- | --- | --- | --- |
+| SX1 | ROM set, regions, MRA | done | `mame -verifyroms superx` good; `romtool.py regions --game superx` == MAME region dump 9/9 (word-swapped regions included); `mracheck --game superx` PASS |
+| SX2 | Game select | done | MRA ioctl index-1 byte; `sim.sh m6`: select/keep/clear checks (32 checks total) |
+| SX3 | Super-X 68000 map | done | `sim.sh m3x +SUPERX`: 260,340 bus transactions identical to MAME, 4 interrupt entries at MAME's transactions (then the known IACK timing difference) |
+| SX4 | ROM download | done | `sim.sh m2 +STREAM=local/superx/superx.rom +SIMDIR=local/superx/sim` PASS |
+| SX5 | Video | done | refrender: attract 59/60 + 12/12 flipped + 60/60 gameplay pixel-exact (the remaining attract frame differs only by MAME's readout-time palette); RTL `m11` 7/7 Super-X frames (attract, flipped, gameplay boss scene) pixel-exact; `m15x` whole board frames 55-62 pixel-exact |
+| SX6 | Sound | done | `m16x`: chip writes identical to MAME through the latch race once the Z80 starts with the 68000; audio vs MAME 0.4-11 s ratio 0.99, envelope 0.991, spectrum 0.989; OKI window 10.3-11 s ratio 1.03 |
+| SX7 | Controls / gameplay on the FPGA | in progress | `m15x` with scripted coin/start/fire/movement vs MAME with the same inputs |
+| SX8 | Shared RBF | built | timing closed (rebuild with the sound-reset change pending) |
