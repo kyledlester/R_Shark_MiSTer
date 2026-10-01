@@ -33,3 +33,10 @@
 | SX6 | Sound | done | `m16x` 11 s: 23,945/23,945 chip writes identical to MAME; audio 0.4-11 s ratio 0.99, envelope 0.992, spectrum 0.989; OKI window ratio 1.04, envelope 0.953 |
 | SX7 | Controls / gameplay on the FPGA | done (sim) | `m15x +INPUTS`: coin, start, autofire and movement scripted identically into MAME and the FPGA; the FPGA starts the game and stays in lock-step for 240 frames; gameplay frames 230-240: 10/11 pixel-exact, the 11th differs only by sprite entry 167, which the CPU rewrote at the vblank-copy instant (FPGA frame == MAME state with that entry one frame older: 0 differences) |
 | SX8 | Shared RBF | done | built from a6bd2d9: clk_sys +1.053 ns, clk_snd +4.217 ns, all hold positive; 82 % ALMs, 515/553 M10K |
+
+## Clone sets (`mra/_Alternatives/`)
+
+| Set | Evidence |
+| --- | --- |
+| `rsharka` | MAME -verifyroms good; 21/21 CRC; regions == MAME dump 9/9; mracheck PASS; `m2` loader PASS; `m3a` boot trace identical to MAME up to the parent's known IACK point (333,585, IRQ entries at MAME's transactions); refrender 101/101 MAME frames (attract + scripted coin/start/play) pixel-exact; RTL `m11` 4 frames (attract + gameplay) pixel-exact |
+| `superxm` | MAME -verifyroms good; 14/14 CRC; regions == MAME dump 9/9; mracheck PASS; graphics/samples identical to superx (loader path covered by superx `m2`); `m3xm` boot trace identical up to 260,341 (parent's IACK point); refrender 101/101 (two palette-flash frames need MAME's readout palette, then 0 differences); RTL `m11` 3 frames pixel-exact |

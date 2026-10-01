@@ -34,6 +34,17 @@ Because the stream carries MAME odd bytes at even stream offsets, a word-swapped
 order *is* the stream order: the Super-X MRA sends those files as plain parts (and the first 0x40000
 bytes again as the tilemap copies), with no interleave. `romtool.py mracheck --game superx`: PASS.
 
+## Clone sets (`mra/_Alternatives/`)
+
+* `rsharka` (R-Shark set 2): own program (9.1/8.2), sound (1.15), fg1 (11.13/10.12), bg1 (17.7/16.6),
+  bg0 (21.4/20.3), tmap_hi 12.14/18.8/19.5 and OKI (2.16/3.17); sprites, fg0 and tmap_hi +0x20000
+  are rshark's files (MRA uses the merge names rse4-7, rse14/15, rse13, found in rshark.zip).
+  Game select 00.
+* `superxm` (Super-X Mitchell): own program (2_m.3m/3_m.3l) and sound (1_m.5u); everything else is
+  superx's. Game select 01.
+
+Both MRAs search `<clone>.zip|<parent>.zip`. All nine regions of each match MAME's region memory.
+
 ## Game select (ioctl index 1)
 
 Each MRA sends one byte before the ROM stream: 00 = R-Shark, 01 = Super-X (address map select).

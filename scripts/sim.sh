@@ -33,6 +33,8 @@ spec() {
     m2)  python scripts/mk_sdram_sim.py build/sim/sdram_sim.sv
          echo "m2_loader_tb||||rtl/rshark/rshark_loader.sv rtl/rshark/rshark_sdram_arb.sv build/sim/sdram_sim.sv sim/models/sdr_sdram_model.sv sim/tb/m2_loader_tb.sv" ;;
     m3x) echo "m3_boot_tb||cpu|+define+RSHARK_SIM_ROM=\"local/superx/sim/maincpu.hex\"|rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN sim/tb/m3_boot_tb.sv" ;;
+    m3a) echo "m3_boot_tb||cpu|+define+RSHARK_SIM_ROM=\"local/rsharka/sim/maincpu.hex\"|rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN sim/tb/m3_boot_tb.sv" ;;
+    m3xm) echo "m3_boot_tb||cpu|+define+RSHARK_SIM_ROM=\"local/superxm/sim/maincpu.hex\"|rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN sim/tb/m3_boot_tb.sv" ;;
     m6)  echo "m6_inputs_tb|$T80 rtl/vendor/t80/T80s.vhd|cpu||rtl/rshark/rshark_clocks.sv rtl/rshark/rshark_video_timing.sv $MAIN $VIDEO rtl/rshark/rshark_sdram_arb.sv rtl/rshark/rshark_loader.sv rtl/rshark/rshark_sound.sv rtl/rshark/rshark_overlay.sv rtl/rshark/rshark_core.sv $JT51 $JT6295 sim/tb/m6_inputs_tb.sv" ;;
     *) echo "" ;;
   esac

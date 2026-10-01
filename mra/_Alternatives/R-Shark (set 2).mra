@@ -54,12 +54,12 @@
     <rom index="0" zip="rsharka.zip|rshark.zip" md5="None">
         <!-- 000000 sprite -->
         <interleave output="16">
-            <part name="4.19" crc="b857e411" map="10"/>
-            <part name="5.18" crc="7822d77a" map="01"/>
+            <part name="rse4.bin" crc="b857e411" map="10"/>
+            <part name="rse5.bin" crc="7822d77a" map="01"/>
         </interleave>
         <interleave output="16">
-            <part name="6.21" crc="80215c52" map="10"/>
-            <part name="7.20" crc="bd28bbdc" map="01"/>
+            <part name="rse6.bin" crc="80215c52" map="10"/>
+            <part name="rse7.bin" crc="bd28bbdc" map="01"/>
         </interleave>
         <!-- 200000 bg0 -->
         <interleave output="16">
@@ -73,8 +73,8 @@
         </interleave>
         <!-- 400000 fg0 -->
         <interleave output="16">
-            <part name="15.10" crc="d188134d" map="10"/>
-            <part name="14.9" crc="0ef637a7" map="01"/>
+            <part name="rse15.bin" crc="d188134d" map="10"/>
+            <part name="rse14.bin" crc="0ef637a7" map="01"/>
         </interleave>
         <!-- 500000 fg1 -->
         <interleave output="16">
@@ -93,8 +93,8 @@
         </interleave>
         <!-- 680000 fg0map -->
         <interleave output="16">
-            <part name="15.10" crc="d188134d" offset="0" length="0x20000" map="10"/>
-            <part name="14.9" crc="0ef637a7" offset="0" length="0x20000" map="01"/>
+            <part name="rse15.bin" crc="d188134d" offset="0" length="0x20000" map="10"/>
+            <part name="rse14.bin" crc="0ef637a7" offset="0" length="0x20000" map="01"/>
         </interleave>
         <!-- 6C0000 fg1map -->
         <interleave output="16">
@@ -103,7 +103,7 @@
         </interleave>
         <!-- 700000 tmap_hi -->
         <part name="12.14" crc="d5cab49c"/>
-        <part name="13.11" crc="323d4df6"/>
+        <part name="rse13.bin" crc="323d4df6"/>
         <part name="18.8" crc="5e0091a1"/>
         <part name="19.5" crc="e5ae7112"/>
         <!-- 780000 oki -->

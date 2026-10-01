@@ -121,36 +121,37 @@ GAMES = {
 import copy as _copy
 GAMES["rsharka"] = dict(
     _copy.deepcopy(GAMES["rshark"]), parent="rshark",
-    name="R-Shark (set 2)", mra="R-Shark (set 2).mra",
+    name="R-Shark (set 2)", mra="_Alternatives/R-Shark (set 2).mra",
+    # files shared with rshark use MAME's merge names (as in split and merged sets)
     roms={
         "9.1":   (0x20000, 0xdafa38df), "8.2": (0x20000, 0x31bd7b90),
         "1.15":  (0x10000, 0x8be49bc1),
-        "4.19":  (0x80000, 0xb857e411), "5.18": (0x80000, 0x7822d77a),
-        "6.21":  (0x80000, 0x80215c52), "7.20": (0x80000, 0xbd28bbdc),
+        "rse4.bin":  (0x80000, 0xb857e411), "rse5.bin": (0x80000, 0x7822d77a),
+        "rse6.bin":  (0x80000, 0x80215c52), "rse7.bin": (0x80000, 0xbd28bbdc),
         "11.13": (0x80000, 0xb5912b55), "10.12": (0x80000, 0x345456af),
-        "15.10": (0x80000, 0xd188134d), "14.9": (0x80000, 0x0ef637a7),
+        "rse15.bin": (0x80000, 0xd188134d), "rse14.bin": (0x80000, 0x0ef637a7),
         "17.7":  (0x80000, 0xf47e164c), "16.6": (0x80000, 0x52fae286),
         "21.4":  (0x80000, 0x0b7b6cc4), "20.3": (0x80000, 0x31f218bf),
-        "12.14": (0x20000, 0xd5cab49c), "13.11": (0x20000, 0x323d4df6),
+        "12.14": (0x20000, 0xd5cab49c), "rse13.bin": (0x20000, 0x323d4df6),
         "18.8":  (0x20000, 0x5e0091a1), "19.5": (0x20000, 0xe5ae7112),
         "2.16":  (0x20000, 0xdbe5632b), "3.17": (0x20000, 0x0dcd3ffb),
     },
     regions={
         "maincpu":  (0x40000,  [("9.1", 0, "b16"), ("8.2", 1, "b16")]),
         "audiocpu": (0x10000,  [("1.15", 0, "load")]),
-        "sprite":   (0x200000, [("4.19", 0, "b16"), ("5.18", 1, "b16"),
-                                ("6.21", 0x100000, "b16"), ("7.20", 0x100001, "b16")]),
+        "sprite":   (0x200000, [("rse4.bin", 0, "b16"), ("rse5.bin", 1, "b16"),
+                                ("rse6.bin", 0x100000, "b16"), ("rse7.bin", 0x100001, "b16")]),
         "fg1":      (0x100000, [("11.13", 0, "b16"), ("10.12", 1, "b16")]),
-        "fg0":      (0x100000, [("15.10", 0, "b16"), ("14.9", 1, "b16")]),
+        "fg0":      (0x100000, [("rse15.bin", 0, "b16"), ("rse14.bin", 1, "b16")]),
         "bg1":      (0x100000, [("17.7", 0, "b16"), ("16.6", 1, "b16")]),
         "bg0":      (0x100000, [("21.4", 0, "b16"), ("20.3", 1, "b16")]),
-        "tmap_hi":  (0x80000,  [("12.14", 0, "load"), ("13.11", 0x20000, "load"),
+        "tmap_hi":  (0x80000,  [("12.14", 0, "load"), ("rse13.bin", 0x20000, "load"),
                                 ("18.8", 0x40000, "load"), ("19.5", 0x60000, "load")]),
         "oki":      (0x40000,  [("2.16", 0, "load"), ("3.17", 0x20000, "load")]),
     })
 GAMES["superxm"] = dict(
     _copy.deepcopy(GAMES["superx"]), parent="superx",
-    name="Super-X (Mitchell)", manufacturer="Dooyong (Mitchell license)", mra="Super-X (Mitchell).mra")
+    name="Super-X (Mitchell)", manufacturer="Dooyong (Mitchell license)", mra="_Alternatives/Super-X (Mitchell).mra")
 _sx = GAMES["superxm"]
 for _old, _new, _crc in (("2.3m", "2_m.3m", 0x41c50aac), ("3.3l", "3_m.3l", 0x6738b703), ("1.5u", "1_m.5u", 0x319fa632)):
     _sx["roms"] = {(_new if k == _old else k): ((v[0], _crc) if k == _old else v) for k, v in _sx["roms"].items()}
