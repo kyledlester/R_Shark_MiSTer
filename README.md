@@ -1,23 +1,26 @@
-# R-Shark (Dooyong, 1995) for MiSTer
+# R-Shark / Super-X (Dooyong) for MiSTer
 
-MiSTer FPGA core for Dooyong's **R-Shark** (MAME set `rshark`), a vertical shoot 'em up on the
-Dooyong 68000 board: 68000 @ 8 MHz, Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers
-and buffered 16x16 sprites.
+MiSTer FPGA core for two Dooyong vertical shoot 'em ups on the same 68000 board (68000 @ 8 MHz,
+Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers, buffered 16x16 sprites):
 
-**Status: first pass, awaiting hardware validation.** In simulation against MAME 0.289: the whole
-board runs the real game from reset with displayed frames pixel-exact to MAME, and the sound board's
-register stream and audio match MAME (see [docs/MILESTONES.md](docs/MILESTONES.md)). Quartus timing
-is closed.
+| Game | MAME set | MRA | Status |
+| --- | --- | --- | --- |
+| R-Shark (set 1), 1995 | `rshark` | `mra/R-Shark (set 1).mra` | working on hardware (owner report) |
+| Super-X (NTC), 1994 | `superx` | `mra/Super-X (NTC).mra` | verified in simulation against MAME 0.289; hardware test pending |
 
-ROMs are not included. You must supply your own `rshark.zip` (MAME 0.289 set, `mame -verifyroms
-rshark` = good).
+One RBF (`RShark`) runs both; each MRA tells the core which game it is loading (a game-select
+byte on ioctl index 1) and the core uses that game's 68000 address map.
+
+ROMs are not included. Supply your own `rshark.zip` / `superx.zip` (MAME 0.289 sets; `mame
+-verifyroms rshark superx` = good).
 
 ## Installation
 
-1. Copy `Releases/RShark_YYYYMMDD.rbf` to `/media/fat/_Arcade/cores/`.
-2. Copy `mra/R-Shark (set 1).mra` to `/media/fat/_Arcade/`.
-3. Copy `rshark.zip` to `/media/fat/games/mame/`.
-4. Load *R-Shark (set 1)* from the Arcade menu.
+1. Copy `Releases/RShark_YYYYMMDD.rbf` to `/media/fat/_Arcade/cores/` (remove older `RShark_*.rbf`).
+2. Copy both MRAs from `mra/` to `/media/fat/_Arcade/`. Use the new R-Shark MRA too: it now sends
+   the game-select byte.
+3. Copy `rshark.zip` and/or `superx.zip` to `/media/fat/games/mame/`.
+4. Load *R-Shark (set 1)* or *Super-X (NTC)* from the Arcade menu.
 
 ## Controls
 
@@ -32,13 +35,14 @@ rshark` = good).
 | Service | R |
 | Pause (core) | L |
 
-Player 2 uses the second controller.
+Player 2 uses the second controller. Both games use the same controls.
 
 ## OSD
 
 * **Orientation** Vert/Horz and **Rotate CCW/CW** (HDMI; the game is rotated counter-clockwise).
-* **DIP switches** (from the MRA): coinage, lives, difficulty, continue, demo sounds, flip screen,
-  service mode.
+* **DIP switches** (from each MRA, as MAME defines them): coinage, lives, difficulty, continue, demo
+  sounds, flip screen, and SWA:1 (R-Shark: service mode; Super-X: "Unknown (SWA:1)" - documented as
+  service mode but MAME notes it has no effect).
 * **CRT Adjust** (analog 15 kHz geometry), **Scandoubler Fx**, **Pause** options.
 * **Debug overlay**: six hex counters (see below). **Video test pattern**: colour bars on the
   native raster.

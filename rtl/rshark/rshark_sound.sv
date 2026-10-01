@@ -42,16 +42,19 @@ module rshark_sound #(
     output logic [15:0] dbg_z80_irqs
 );
     // ------------------------------------------------------------------ clk_snd domain basics
-    // Reset is synchronised and stretched to 4096 clk_snd (> 300 ce_4m): jt51's shift-register
-    // pipelines only take their reset value if reset spans as many enabled clocks as they have
-    // stages (jt51_sh.v), so the enables keep running during reset.
-    logic [1:0]  rst_s = 2'b11, pause_s = 2'b00;
+    // Reset is synchronised and lasts at least 4096 clk_snd (> 300 ce_4m) counted from its
+    // assertion: jt51's shift-register pipelines only take their reset value if reset spans as many
+    // enabled clocks as they have stages (jt51_sh.v), so the enables keep running during reset.
+    // A long reset (every ROM download) therefore ends exactly with the board reset, so the Z80
+    // starts together with the 68000 as in MAME (the sound program races the 68000 on the latch).
+    logic [2:0]  rst_s = 3'b111;
+    logic [1:0]  pause_s = 2'b00;
     logic [11:0] rst_cnt = '1;
     logic        rst = 1'b1;
     always_ff @(posedge clk_snd) begin
-        rst_s   <= {rst_s[0], reset};
+        rst_s   <= {rst_s[1:0], reset};
         pause_s <= {pause_s[0], pause};
-        if (rst_s[1]) rst_cnt <= '1;
+        if (rst_s[1] && !rst_s[2]) rst_cnt <= '1;               // reset asserted: restart the minimum
         else if (rst_cnt != 0) rst_cnt <= rst_cnt - 12'd1;
         rst <= rst_s[1] || rst_cnt != 0;
     end

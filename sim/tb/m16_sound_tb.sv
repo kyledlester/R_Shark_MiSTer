@@ -38,7 +38,7 @@ module m16_sound_tb;
 
     // OKI ROM
     logic [7:0] oki_rom [0:262143];
-    string oki_hex, strace;
+    string oki_hex, strace, sraw;
     initial begin
         if (!$value$plusargs("OKIHEX=%s", oki_hex)) oki_hex = "local/sim/oki.hex";
         $readmemh(oki_hex, oki_rom);
@@ -79,10 +79,13 @@ module m16_sound_tb;
             end
         end
         $fclose(fd);
-        afd = $fopen("build/sim/sound.raw", "wb");
+        if (!$value$plusargs("SOUNDRAW=%s", sraw)) sraw = "build/sim/sound.raw";
+        afd = $fopen(sraw, "wb");
         $display("trace: %0d latch writes, %0d Z80 chip writes", lat_t.size(), w_t.size());
-        repeat (4) @(posedge clk);
-        reset <= 0;       // MAME starts both CPUs at time 0
+        // a long reset like the ROM download's (covers jt51's minimum reset), then both CPUs start
+        // at time 0 as in MAME
+        repeat (5000) @(posedge clk_snd);
+        reset <= 0;
     end
 
     // time in microseconds since reset release: 8 clocks per us
