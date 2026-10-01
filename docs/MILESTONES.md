@@ -42,3 +42,9 @@
 | --- | --- |
 | `rsharka` | MAME -verifyroms good; 21/21 CRC; regions == MAME dump 9/9; mracheck PASS; `m2` loader PASS; `m3a` boot trace identical to MAME up to the parent's known IACK point (333,585, IRQ entries at MAME's transactions); refrender 101/101 MAME frames (attract + scripted coin/start/play) pixel-exact; RTL `m11` 4 frames (attract + gameplay) pixel-exact |
 | `superxm` | MAME -verifyroms good; 14/14 CRC; regions == MAME dump 9/9; mracheck PASS; graphics/samples identical to superx (loader path covered by superx `m2`); `m3xm` boot trace identical up to 260,341 (parent's IACK point); refrender 101/101 (two palette-flash frames need MAME's readout palette, then 0 differences); RTL `m11` 3 frames pixel-exact |
+
+## Release builds
+
+| RBF | Source | Timing | Resources |
+| --- | --- | --- | --- |
+| `Releases/RShark_20261001.rbf` (beta) | `ca37da3` | clk_sys +0.889 ns, clk_snd +3.887 ns setup; all hold >= +0.245 ns | 81 % ALMs, 515/553 M10K, 40 DSP |
