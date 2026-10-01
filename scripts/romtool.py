@@ -13,7 +13,7 @@ download (0 = R-Shark, 1 = Super-X) sent by each MRA.
   romtool.py mra      [--game G] [--out FILE]        write the MRA
   romtool.py mracheck [--game G] [--zip Z] [--mra F] rebuild the stream by interpreting the MRA
 
-G = rshark (default) or superx. Default zip: C:/Users/klest/Downloads/mame/roms/<set>.zip.
+G = rshark (default), rsharka, superx or superxm (clones fall back to the parent zip for shared files). Default zip: C:/Users/klest/Downloads/mame/roms/<set>.zip.
 Default output dir: local/ (rshark), local/superx/ (superx).
 """
 import argparse, os, sys, zipfile, zlib, xml.etree.ElementTree as ET
@@ -115,6 +115,48 @@ GAMES = {
     ),
 }
 
+# Clones (MAME 0.289 -listxml): same board and map as their parent; only the files differ.
+# "zips" lists where the MRA (and this tool) look for files: clone zip first, then the parent's,
+# so both split and merged/non-merged ROM sets work.
+import copy as _copy
+GAMES["rsharka"] = dict(
+    _copy.deepcopy(GAMES["rshark"]), parent="rshark",
+    name="R-Shark (set 2)", mra="R-Shark (set 2).mra",
+    roms={
+        "9.1":   (0x20000, 0xdafa38df), "8.2": (0x20000, 0x31bd7b90),
+        "1.15":  (0x10000, 0x8be49bc1),
+        "4.19":  (0x80000, 0xb857e411), "5.18": (0x80000, 0x7822d77a),
+        "6.21":  (0x80000, 0x80215c52), "7.20": (0x80000, 0xbd28bbdc),
+        "11.13": (0x80000, 0xb5912b55), "10.12": (0x80000, 0x345456af),
+        "15.10": (0x80000, 0xd188134d), "14.9": (0x80000, 0x0ef637a7),
+        "17.7":  (0x80000, 0xf47e164c), "16.6": (0x80000, 0x52fae286),
+        "21.4":  (0x80000, 0x0b7b6cc4), "20.3": (0x80000, 0x31f218bf),
+        "12.14": (0x20000, 0xd5cab49c), "13.11": (0x20000, 0x323d4df6),
+        "18.8":  (0x20000, 0x5e0091a1), "19.5": (0x20000, 0xe5ae7112),
+        "2.16":  (0x20000, 0xdbe5632b), "3.17": (0x20000, 0x0dcd3ffb),
+    },
+    regions={
+        "maincpu":  (0x40000,  [("9.1", 0, "b16"), ("8.2", 1, "b16")]),
+        "audiocpu": (0x10000,  [("1.15", 0, "load")]),
+        "sprite":   (0x200000, [("4.19", 0, "b16"), ("5.18", 1, "b16"),
+                                ("6.21", 0x100000, "b16"), ("7.20", 0x100001, "b16")]),
+        "fg1":      (0x100000, [("11.13", 0, "b16"), ("10.12", 1, "b16")]),
+        "fg0":      (0x100000, [("15.10", 0, "b16"), ("14.9", 1, "b16")]),
+        "bg1":      (0x100000, [("17.7", 0, "b16"), ("16.6", 1, "b16")]),
+        "bg0":      (0x100000, [("21.4", 0, "b16"), ("20.3", 1, "b16")]),
+        "tmap_hi":  (0x80000,  [("12.14", 0, "load"), ("13.11", 0x20000, "load"),
+                                ("18.8", 0x40000, "load"), ("19.5", 0x60000, "load")]),
+        "oki":      (0x40000,  [("2.16", 0, "load"), ("3.17", 0x20000, "load")]),
+    })
+GAMES["superxm"] = dict(
+    _copy.deepcopy(GAMES["superx"]), parent="superx",
+    name="Super-X (Mitchell)", manufacturer="Dooyong (Mitchell license)", mra="Super-X (Mitchell).mra")
+_sx = GAMES["superxm"]
+for _old, _new, _crc in (("2.3m", "2_m.3m", 0x41c50aac), ("3.3l", "3_m.3l", 0x6738b703), ("1.5u", "1_m.5u", 0x319fa632)):
+    _sx["roms"] = {(_new if k == _old else k): ((v[0], _crc) if k == _old else v) for k, v in _sx["roms"].items()}
+    for _r, (_size, _loads) in _sx["regions"].items():
+        _sx["regions"][_r] = (_size, [(_new if f == _old else f, o, k) for f, o, k in _loads])
+
 # ioctl index-0 stream layout (docs/ROM_LAYOUT.md), shared by both games. Word regions arrive
 # big-endian per 16-bit word (ioctl_dout[15:8] = MAME even byte); byte regions arrive in order
 # (ioctl_dout[7:0] = even byte).   (name, stream offset, length, source region, source offset, word?)
@@ -144,13 +186,22 @@ TMAP_HI_LAYER = ["fg1", "fg0", "bg1", "bg0"]   # tmap_hi offset / 0x20000 (MAME 
 
 
 def load_zip(g, path):
-    z = zipfile.ZipFile(path)
-    names = {i.filename.lower(): i.filename for i in z.infolist()}
+    """Read the set's files from `path`, falling back to the parent set's zip (split sets)."""
+    paths = [path]
+    if g.get("parent"):
+        paths.append(os.path.join(os.path.dirname(path), g["parent"] + ".zip"))
+    zips = [zipfile.ZipFile(p) for p in paths if os.path.exists(p)]
+    if not zips:
+        raise SystemExit(f"missing {path}")
     data = {}
     for n in g["roms"]:
-        if n not in names:
-            raise SystemExit(f"missing {n} in {path}")
-        data[n] = z.read(names[n])
+        for z in zips:
+            names = {i.filename.lower(): i.filename for i in z.infolist()}
+            if n in names:
+                data[n] = z.read(names[n])
+                break
+        else:
+            raise SystemExit(f"missing {n} in {' / '.join(paths)}")
     return data
 
 
@@ -289,6 +340,8 @@ def make_mra(key):
     a("<misterromdescription>")
     a(f"    <name>{g['name']}</name>")
     a(f"    <setname>{key}</setname>")
+    if g.get("parent"):
+        a(f"    <parent>{g['parent']}</parent>")
     a("    <rbf>RShark</rbf>")
     a("    <mameversion>0289</mameversion>")
     a(f"    <year>{g['year']}</year>")
@@ -307,7 +360,8 @@ def make_mra(key):
     a('    <rom index="1">')
     a(f"        <part>{g['game_id']:02X}</part>")
     a("    </rom>")
-    a(f'    <rom index="0" zip="{key}.zip" md5="None">')
+    zips = f"{key}.zip" + (f"|{g['parent']}.zip" if g.get("parent") else "")
+    a(f'    <rom index="0" zip="{zips}" md5="None">')
     for name, soff, length, src, srcoff, word in STREAM:
         a(f"        <!-- {soff:06X} {name} -->")
         if word:

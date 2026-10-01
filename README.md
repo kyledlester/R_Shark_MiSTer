@@ -7,6 +7,8 @@ Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers, buffered 16x16 s
 | --- | --- | --- | --- |
 | R-Shark (set 1), 1995 | `rshark` | `mra/R-Shark (set 1).mra` | working on hardware (owner report) |
 | Super-X (NTC), 1994 | `superx` | `mra/Super-X (NTC).mra` | verified in simulation against MAME 0.289 (boot, attract, gameplay, sound); hardware test pending |
+| R-Shark (set 2), 1995 | `rsharka` (clone of `rshark`) | `mra/R-Shark (set 2).mra` | MRA generated from MAME 0.289's definition; **not yet verified** (ROM set not available locally) |
+| Super-X (Mitchell), 1994 | `superxm` (clone of `superx`) | `mra/Super-X (Mitchell).mra` | MRA generated from MAME 0.289's definition; **not yet verified** (ROM set not available locally) |
 
 One RBF (`RShark`) runs both; each MRA tells the core which game it is loading (a game-select
 byte on ioctl index 1) and the core uses that game's 68000 address map.
@@ -19,7 +21,8 @@ ROMs are not included. Supply your own `rshark.zip` / `superx.zip` (MAME 0.289 s
 1. Copy `Releases/RShark_YYYYMMDD.rbf` to `/media/fat/_Arcade/cores/` (remove older `RShark_*.rbf`).
 2. Copy both MRAs from `mra/` to `/media/fat/_Arcade/`. Use the new R-Shark MRA too: it now sends
    the game-select byte.
-3. Copy `rshark.zip` and/or `superx.zip` to `/media/fat/games/mame/`.
+3. Copy `rshark.zip` and/or `superx.zip` to `/media/fat/games/mame/` (the clone MRAs also need
+   `rsharka.zip` / `superxm.zip`; split sets work, as they fall back to the parent zip).
 4. Load *R-Shark (set 1)* or *Super-X (NTC)* from the Arcade menu.
 
 ## Controls
