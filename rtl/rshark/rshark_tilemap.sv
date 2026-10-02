@@ -6,7 +6,7 @@
 // covering bitmap x 64..447 of each enabled layer into the tile line buffer:
 //   entry {valid, pri, index[10:0]}: BG0 writes every pixel (pri 0), the others only pens != 15
 //   (pri = 1 for FG0/FG1, and for BG1 when the control byte's bit 4 is set).
-// SDRAM (docs/ROM_LAYOUT.md): map+colour at MAP_BASE[layer] + (row*4096 + column)*2 words, a
+// SDRAM (docs/MRA_FORMAT.md): map+colour at MAP_BASE[layer] + (row*4096 + column)*2 words, a
 // 4-word burst returns columns 2k and 2k+1 {attr, colour, attr, colour}; tile pixel rows at
 // GFX_BASE[layer] + code*64 + row*4 words, a burst = the 16 pixels of the row.
 module rshark_tilemap (

@@ -8,7 +8,7 @@
 // overwrite earlier ones, which reproduces MAME's "entry 255 drawn first, pri=31 blocks the rest"
 // result (the colour 0/15 priority test is applied at output). Pixels at x >= 512 are dropped
 // (MAME clips, no wrap).
-// SDRAM: sprite tile rows at code*64 + row*4 words (docs/ROM_LAYOUT.md), 4-word burst = 16 pixels,
+// SDRAM: sprite tile rows at code*64 + row*4 words (docs/MRA_FORMAT.md), 4-word burst = 16 pixels,
 // pixel p = nibble p of the row (high nibble first).
 module rshark_sprites (
     input  logic        clk,

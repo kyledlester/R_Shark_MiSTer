@@ -1,7 +1,7 @@
 // R-Shark MiSTer core -- ROM loader (ioctl index 0, hps_io WIDE=1).
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Stream layout and SDRAM image: docs/ROM_LAYOUT.md (scripts/romtool.py is the executable form;
+// Stream layout and SDRAM image: docs/MRA_FORMAT.md (scripts/romtool.py is the executable form;
 // its SDRAM image is what this module writes, word for word).
 //   000000-5FFFFF graphics words  -> SDRAM word (stream/2) with the in-tile row reorder
 //   600000-6FFFFF tilemap words   -> SDRAM map area, entry (row*4096 + column)*2

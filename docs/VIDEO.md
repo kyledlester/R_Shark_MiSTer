@@ -1,6 +1,6 @@
 # Video
 
-## What MAME models (0.289) - verified by `scripts/refrender.py` (60/60 attract frames pixel-exact)
+## What MAME models (0.289) - verified during development with a Python reference renderer that reproduces MAME's frames pixel-exactly
 
 Raster: 512 x 256 bitmap, visible x 64..447, y 8..247 (384 x 240), ROT270. Palette: 2048 entries
 xRGB_555 (bits 14-10 R, 9-5 G, 4-0 B; 8-bit = x<<3 | x>>2), black pen outside all layers.
@@ -62,7 +62,7 @@ visible-area centre (`effective_rowscroll` with extent 512 / 256), i.e. display 
 unflipped tilemap pixel (511 - x, 255 - y); sprites use `sx = 498 - 16*w - sx`,
 `sy = 240 - 16*h - sy` with flipped tiles, i.e. display (x, y) shows the unflipped sprite pixel
 (513 - x, 255 - y) - a 2-dot offset against the tilemaps that MAME reproduces from its formula.
-refrender.py implements both literally and matches 12/12 MAME frames captured with the DIP on.
+The reference renderer implements both literally and matches MAME frames captured with the DIP on.
 
 ## FPGA implementation
 
@@ -116,7 +116,7 @@ Budget: 6144 clk_sys per line. Load reduction:
 * the SDRAM arbiter issues the next client's request as soon as the controller completes the
   previous access.
 
-Measured (sim m11, production path): busiest attract frame 2760 (197 visible sprite tile-rows on
+Measured in simulation of the production video path: busiest attract frame 2760 (197 visible sprite tile-rows on
 one line) 4291 clocks = 70 % of the line; frame 1800 2617; flipped frame 3000 3152. The busiest
 gameplay frame of a MAME demo run (frames 600-7200, coin/start/autofire) has 164 visible tile-rows
 on its worst line.

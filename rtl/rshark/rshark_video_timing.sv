@@ -12,7 +12,7 @@
 //   line_start : every line, with the new vcount valid.
 // Reset phase: MAME starts its screen at vblank begin (screen.cpp: m_vblank_start_time = 0), i.e.
 // the beam is at line 248, dot 0 at time 0. The raster leaves reset at the same position so CPU
-// time and interrupt lines keep MAME's phase (sim/tb/m3_boot_tb.sv compares bus traces).
+// time and interrupt lines keep MAME's phase (used to compare bus traces with MAME during development).
 module rshark_video_timing (
     input  logic       clk,
     input  logic       rst,

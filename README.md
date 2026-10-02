@@ -1,119 +1,106 @@
 # R-Shark / Super-X (Dooyong) for MiSTer
 
-MiSTer FPGA core for Dooyong's 68000-based vertical shoot 'em ups **R-Shark** (1995) and
-**Super-X** (1994): 68000 @ 8 MHz, Z80 @ 4 MHz, YM2151 + OKI M6295, four ROM-based tilemap layers and
-buffered 16x16 sprites. One core (`RShark`) runs every supported set; each MRA tells the core which
-game it is loading.
+A MiSTer FPGA core for Dooyong's 68000-based vertical shoot 'em ups **R-Shark** (1995) and
+**Super-X** (1994). One core (`RShark`) runs every supported game; each game has its own MRA.
 
-**Status: beta.** All four sets below boot, run their attract mode and are playable on MiSTer
-hardware with graphics, controls and sound (owner-tested). In development every set was also
-checked against MAME 0.289 in simulation (CPU bus traces, pixel-exact frames, sound-chip register
-streams and audio) - see [docs/MILESTONES.md](docs/MILESTONES.md).
+I created this core because I wanted to play these games on my MiSTer FPGA. I am posting it here and open sourcing it for everyone to enjoy and give feedback/make improvements. This core was created with the assistance of AI tooling.
 
-| Game | MAME set | MRA |
-| --- | --- | --- |
-| R-Shark (set 1), 1995 | `rshark` | `MRA/R-Shark (set 1).mra` |
-| Super-X (NTC), 1994 | `superx` | `MRA/Super-X (NTC).mra` |
-| R-Shark (set 2), 1995 | `rsharka` (clone of `rshark`) | `MRA/_Alternatives/_R-Shark/R-Shark (set 2).mra` |
-| Super-X (Mitchell), 1994 | `superxm` (clone of `superx`) | `MRA/_Alternatives/_Super-X/Super-X (Mitchell).mra` |
+**Status: beta.** All four sets boot, run their attract mode and are playable on real MiSTer
+hardware with graphics, controls and sound.
 
 ## Quick start
 
-1. Copy the newest `Releases/RShark_YYYYMMDD.rbf` to **`/media/fat/_Arcade/cores/`** (delete older
-   `RShark_*.rbf` files there).
-2. Copy the MRA files from `MRA/` to **`/media/fat/_Arcade/`**, and the `_R-Shark` / `_Super-X`
-   folders from `MRA/_Alternatives/` to **`/media/fat/_Arcade/_alternatives/`**.
+1. Copy the core from [`Releases/`](Releases/) (`RShark_YYYYMMDD.rbf`) to
+   **`/media/fat/_Arcade/cores/`**.
+2. Copy the MRA files from [`MRA/`](MRA/) to **`/media/fat/_Arcade/`**.
+   For the alternative sets, copy the `_<Game>` folders from
+   [`MRA/_alternatives/`](MRA/_alternatives/) to **`/media/fat/_Arcade/_alternatives/`**.
 3. Put the MAME ROM zips (MAME 0.289 sets) in **`/media/fat/games/mame/`**.
 4. Load a game from the **Arcade** menu.
 
 ROMs are not included. You must supply your own.
 
-### ROM sets
+## Supported games
 
-* `rshark.zip`, `superx.zip`: the parent sets (`mame -verifyroms rshark superx` = good).
-* `rsharka.zip`, `superxm.zip`: **split or merged** clone sets. The clone MRAs look in the clone zip
-  first and then in the parent zip, and name the files shared with the parent by MAME's merge names
-  (`rse4.bin`, ...), so the parent zip must be present. A *non-merged* `rsharka.zip` that stores the
-  shared files under the clone's own names (`4.19`, ...) will not load.
+| Game | MAME set | Year | Genre | Board | Status |
+| --- | --- | --- | --- | --- | --- |
+| R-Shark (set 1) | `rshark` | 1995 | Vertical shoot 'em up | Dooyong | Boots to title screen and is playable |
+| Super-X (NTC) | `superx` | 1994 | Vertical shoot 'em up | Dooyong | Boots to title screen and is playable |
 
-If you previously installed R-Shark from this repository, replace its MRA too: every MRA now sends
-a game-select byte, and an old R-Shark MRA can leave the core in Super-X mode after a Super-X game.
+### Alternatives
 
-## Controls
+These use the same core and the same board settings as the main set, with a
+different ROM set.
 
-| Game | MiSTer (default pad) |
-| --- | --- |
-| 8-way joystick | D-pad / stick |
-| Button 1 (shot) | A |
-| Button 2 (bomb) | B |
-| Buttons 3, 4 | X, Y (not used by the games as far as known) |
-| Start | Start |
-| Coin | Select |
-| Service | R |
-| Pause (core) | L |
+| Game | MAME set | Year | Parent game | Status |
+| --- | --- | --- | --- | --- |
+| R-Shark (set 2) | `rsharka` | 1995 | R-Shark | Boots to title screen and is playable |
+| Super-X (Mitchell) | `superxm` | 1994 | Super-X | Boots to title screen and is playable |
 
-Player 2 uses the second controller. All four sets use the same controls.
+### ROM notes
 
-## OSD
+* The alternative sets work with **split or merged** zips. Their MRAs look in the clone zip first
+  and then in the parent zip, so `rshark.zip` / `superx.zip` must also be present. A *non-merged*
+  `rsharka.zip` that stores the shared files under the clone's own names will not load.
 
-* **Aspect ratio**, **Orientation** (Vert/Horz) and **Rotate CCW/CW** for HDMI; the games are
-  rotated counter-clockwise (MAME ROT270).
-* **Scandoubler Fx**.
-* **DIP Switches** (from each MRA, as MAME defines them): coinage (two coin-type tables), lives,
-  difficulty, continue, demo sounds, flip screen and SWA:1 (R-Shark: Service Mode; Super-X:
-  "Unknown (SWA:1)" - documented as service mode on the board, but MAME notes it has no effect).
-* **CRT Adjust** submenu (native 15 kHz analog output): H-Size, H-Position, V-Shift. Off by default.
-  Because this raster has a short front porch, H-Position only goes 3 steps left, and wider
-  H-Size settings move the picture right automatically to keep it inside the line.
-* **Pause options** submenu.
-* **Debug** submenu: hex debug overlay (below) and a colour-bar test pattern on the native raster.
+## About the hardware
 
-## Known limitations
+R-Shark and Super-X run on the same Dooyong board:
 
-* The original PCB's video timing has never been measured; the core uses MAME's logical raster
-  (512 x 256 total, 384 x 240 active, 15.36 kHz / 60.00 Hz). Native CRT output follows it.
-* Tilemap scroll registers and the palette take effect once per frame (at vertical blank). The
-  games write them mid-frame; whether the real board latches them is unverified.
-* Very rarely a single sprite updates one frame later than in MAME (a sub-microsecond CPU timing
-  race at the sprite-buffer copy).
-* The busiest measured scene uses about 70 % of the per-line drawing budget; the debug overlay
-  counts any overruns (none seen).
+* Motorola **68000** main CPU at 8 MHz.
+* **Z80** sound CPU at 4 MHz with a Yamaha **YM2151** (FM) and an **OKI M6295** (ADPCM samples).
+* Four ROM-based tilemap layers (the tile maps themselves are stored in ROM, not RAM) and buffered
+  16x16 sprites.
+* Vertical (rotated) monitor, 384 x 240 visible.
 
-Details: [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+## About the core
 
-## Video
+* One RBF for both games. The MRA sends a game-select byte; Super-X's different memory map is
+  handled in the core. See [docs/MRA_FORMAT.md](docs/MRA_FORMAT.md).
+* Full video: all four tilemap layers, sprites, priorities and flip screen.
+* Sound: YM2151 and OKI M6295, mixed with MAME's levels.
+* Native 15 kHz output for CRTs, with optional CRT Adjust (H-size, H-position, V-shift) thanks to
+  rmonic79/MiSTer-CRT-Adjust.
+* OSD options: aspect ratio, orientation and rotation for HDMI, scandoubler effects, DIP switches
+  (from each MRA), CRT Adjust, pause options, and a Debug submenu (status overlay, test pattern).
 
-Native raster 512 x 256 total, 384 x 240 active, 7.864 MHz dot clock, **15.36 kHz / 60.00 Hz** -
-MAME's logical raster (the original PCB timing has not been measured; docs/VIDEO.md). On an
-analog/direct-video setup the core outputs the unrotated 15 kHz picture for a rotated (vertical)
-CRT; HDMI uses the MiSTer framebuffer rotation.
+MAME's `dooyong` driver (0.289) is the behavioural reference.
 
-## Debug overlay (OSD Debug submenu; top-left of the rotated picture)
+### Known issues
 
-| Line | Left 16 bits | Right 16 bits |
-| --- | --- | --- |
-| 1 | - | 68000 program address (24 bits) |
-| 2 | frames (vblanks) | IRQ5 acknowledges |
-| 3 | IRQ6 acknowledges | sound-latch writes (68000) |
-| 4 | sound-latch reads (Z80) | Z80 interrupts (YM2151 timer) |
-| 5 | YM2151 writes | OKI writes |
-| 6 | render overruns | `loaded` flag, control byte |
+* The original PCB's video timing has never been measured; the core uses MAME's raster
+  (15.36 kHz / 60.00 Hz). Native CRT output follows it.
+* Because this raster has a short front porch, CRT Adjust's H-Position only goes 3 steps left.
+* Very rarely a single sprite updates one frame later than it should.
+
+More detail: [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md).
+
+## Releases
+
+Builds are in [`Releases/`](Releases/) as `RShark_YYYYMMDD.rbf`. The MRAs name the core without
+the date (`<rbf>RShark</rbf>`), and MiSTer loads the newest dated file in `_Arcade/cores/`. You are
+welcome to run your own build if you'd prefer.
 
 ## Building
 
-* Quartus Prime Lite 17.0: `powershell -ExecutionPolicy Bypass -File scripts\build.ps1` (waits for any
-  other Quartus job on the machine first; writes `build/build-summary.txt`, `output_files/RShark.rbf`,
-  `Releases/RShark_YYYYMMDD.rbf`).
-* Simulation (ModelSim-Intel Starter 10.5b from the Quartus install): `scripts/sim.sh <test>`; tests
-  needing ROM data use images from `python scripts/romtool.py regions|stream|images` (written to
-  `local/`, never committed) and MAME captures from `scripts/mame/*.lua`.
+Quartus Prime Lite 17.0. Open `RShark.qpf` and compile; the build copies a dated RBF into
+`Releases/`. See [docs/BUILDING.md](docs/BUILDING.md).
 
-Documentation: [architecture](docs/ARCHITECTURE.md), [memory map](docs/MEMORY_MAP.md),
-[ROM layout](docs/ROM_LAYOUT.md), [video](docs/VIDEO.md), [audio](docs/AUDIO.md),
-[MAME reference](docs/MAME_REFERENCE.md), [reuse and licences](docs/REUSE_AND_LICENSES.md),
-[known issues](docs/KNOWN_ISSUES.md).
+## Documentation
 
-## Licence
+* [Architecture](docs/ARCHITECTURE.md)
+* [Memory map](docs/MEMORY_MAP.md)
+* [Video](docs/VIDEO.md)
+* [Audio](docs/AUDIO.md)
+* [MRA format](docs/MRA_FORMAT.md)
+* [Known issues](docs/KNOWN_ISSUES.md)
+* [Building](docs/BUILDING.md)
+* [Credits and third-party components](docs/REFERENCES.md)
 
-GPL-3.0-or-later (see `LICENSE`); MiSTer framework under `LICENSE.MiSTer`. Reused components and
-their licences: [docs/REUSE_AND_LICENSES.md](docs/REUSE_AND_LICENSES.md).
+## License
+
+GPL-3.0-or-later (see [LICENSE](LICENSE)). The MiSTer framework in `sys/` keeps its own notices
+([LICENSE.MiSTer](LICENSE.MiSTer)); FX68K, jt51, jt6295, the SDRAM controller and CRT Adjust are
+GPL-3.0-or-later, and T80 uses a BSD-style licence. See [docs/REFERENCES.md](docs/REFERENCES.md).
+
+No ROMs or other game data are included in this repository.

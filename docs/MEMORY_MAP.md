@@ -1,7 +1,7 @@
 # Memory maps
 
 Source: MAME 0.289 `rshark_state::rshark_map`, `dooyong_state::bluehawk_sound_map`; behaviour checks
-from MAME traces (docs/MAME_REFERENCE.md).
+from MAME traces taken during development.
 
 ## 68000 (8 MHz)
 

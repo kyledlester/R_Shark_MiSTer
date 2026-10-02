@@ -55,7 +55,7 @@ module rshark_crt_adjust #(
     assign active = crt_on && sd_off;
 
     // H-Position limits for the R-Shark raster (512 dots: active 64..447, HSync rises at 468; checked
-    // by sim/tb/m17_crt_tb.sv over every H-Size at both H-Position extremes). In HPOS_SYNCSHIFT the
+    // in simulation over every H-Size at both H-Position extremes). In HPOS_SYNCSHIFT the
     // module records each line from its shifted HSync (rise at 468 + 6p) to the next, so:
     //  * the shifted HSync must not fall inside the active area: 468 + 6p >= 448  ->  p >= -3
     //    (only 20 dots of front porch; with p = -4 the line window inverts and no picture is shown);

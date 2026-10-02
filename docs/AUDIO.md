@@ -9,7 +9,7 @@
 | OKI M6295 | 8 MHz / 8 = 1 MHz, `PIN7_HIGH` | divider 132 -> 7575.8 Hz sample rate; x0.42 into mono; 256 KB sample ROM (rse1 + rse2, no gaps) |
 | sound latch | `generic_latch_8` | 68000 writes 0x0C0013, Z80 reads 0xF800; no flag, no interrupt - the Z80 polls it from its YM timer IRQ |
 
-The 68000 writes the latch in its IRQ6 handler (line 122 of each frame, docs/MAME_REFERENCE.md).
+The 68000 writes the latch in its IRQ6 handler (line 122 of each frame, measured with MAME traces).
 The Z80 program also writes 0xF806 / 0xF80C and (per MAME's TODO) 0x0003/0x0004 of ROM space: all
 unmapped / ignored, as in MAME.
 
@@ -39,21 +39,12 @@ unmapped / ignored, as in MAME.
   OKI's 12-bit voices scaled to 16-bit full range: x16). MiSTer mono (AUDIO_L =
   AUDIO_R).
 
-## Verification
+## Verification (development, tooling not included)
 
-* `sim.sh m16` replays MAME's 68000 sound-latch writes at MAME's times into the board and compares
-  every Z80 write to the YM2151 and OKI with MAME's (scripts/mame/sound_trace.lua): 3 s of attract,
-  10,419 writes identical in order and value, max time offset 16.9 us, 827 latch reads, 828 YM timer
-  interrupts. Passes with clk_snd == clk and with the production 2:1 crossing (`+define+M16_HALF`).
-* Simulation note: ModelSim is 4-state; jt51's pipelines rely on FPGA power-up zeros, so the audio
-  bench deposits 0 into the jt51 instance before running (`PRERUN="do sim/tb/zero_regs.do
-  /m16_sound_tb/dut/ym;"`), which is what the FPGA does at configuration.
-* `scripts/audiocheck.py` compares the bench's audio with `mame -wavwrite` output (envelope and
-  spectrum correlation, level ratio). 8.2 s of attract (music from 0.53 s, OKI samples from 7.13 s):
-  0.5-8.2 s level ratio 0.95, 10 ms envelope correlation 0.922, log-spectrum correlation 0.977;
-  OKI window 7.1-8.2 s ratio 1.00, envelope 0.961. Every 100 ms window within about 2 % of MAME.
-* With the Z80 starting together with the 68000: R-Shark 8.2 s, 27,924/27,924 chip writes identical
-  to MAME in order (max offset 16.9 us); OKI window 7.1-8.2 s ratio 0.99, envelope 0.988.
-* Super-X (`sim.sh m16x`, its own MAME trace): 11 s, 23,945/23,945 writes identical; audio 0.4-11 s
-  ratio 0.99, envelope 0.992, spectrum 0.989; OKI window (first sample at 10.41 s) ratio 1.04,
-  envelope 0.953.
+* MAME's 68000 sound-latch writes were replayed at MAME's times into the sound board in simulation
+  and every Z80 write to the YM2151 and OKI compared with MAME's: R-Shark 8.2 s, 27,924/27,924
+  writes identical; Super-X 11 s, 23,945/23,945 identical (max time offset 16.9 us).
+* Audio compared with `mame -wavwrite`: R-Shark level ratio 0.95, 10 ms envelope correlation 0.93,
+  spectrum 0.98; Super-X 0.99 / 0.99 / 0.99; OKI sample windows within 4 % of MAME's level.
+* ModelSim is 4-state: jt51's pipelines rely on FPGA power-up zeros, so the simulation zero-fills
+  the jt51 instance's shift registers before running (what the FPGA does at configuration).
