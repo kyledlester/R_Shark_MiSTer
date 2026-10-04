@@ -14,7 +14,7 @@
    ├─ latched tilemap regs ─► rshark_tilemap
    └─ sound latch ─► rshark_sound (T80 4 MHz, jt51 4 MHz, jt6295 1 MHz) ─► mono audio
  rshark_video_timing (512x256 @ ce_pix = clk/12) ─► IRQ6 (line 120), IRQ5 + copy + latch (line 248)
- RShark.sv: hps_io, pause, CRT Adjust, screen_rotate (ROT270 -> CCW, DDR3 FB), arcade_video
+ RShark.sv: hps_io, pause, CRT Adjust, screen_rotate (Orientation selector; ROT270 -> CCW by default, DDR3 FB), arcade_video
 ```
 
 ## Clocks (rshark_clocks.sv)

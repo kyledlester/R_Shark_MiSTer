@@ -61,8 +61,17 @@ R-Shark and Super-X run on the same Dooyong board:
 * Sound: YM2151 and OKI M6295, mixed with MAME's levels.
 * Native 15 kHz output for CRTs, with optional CRT Adjust (H-size, H-position, V-shift) thanks to
   rmonic79/MiSTer-CRT-Adjust.
-* OSD options: aspect ratio, orientation and rotation for HDMI, scandoubler effects, DIP switches
-  (from each MRA), CRT Adjust, pause options, and a Debug submenu (status overlay, test pattern).
+* OSD options: aspect ratio, orientation, scandoubler effects, DIP switches (from each MRA),
+  CRT Adjust, pause options, and a Debug submenu (status overlay, test pattern).
+* One **Orientation** setting covers every display:
+  * **Vertical CCW** (default): upright on a normal TV over HDMI.
+  * **Vertical CW**: the same picture turned the other way (upside down on a normal TV).
+  * **Horizontal**: the game's raster unrotated, for a tate (rotated) HDMI display or a rotated CRT.
+  * **Flipped**: the raster turned 180 degrees, for a tate display or CRT rotated the other way.
+    This one also applies to the native analog output.
+
+  The rotations use the HDMI scaler; the native 15 kHz output always shows the unrotated raster
+  (flipped in Flipped mode). The game's own Flip Screen DIP switch still works on top of this.
 
 MAME's `dooyong` driver (0.289) is the behavioural reference.
 

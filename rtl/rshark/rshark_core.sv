@@ -32,6 +32,7 @@ module rshark_core (
 
     input  logic [31:0] joy0,
     input  logic [31:0] joy1,
+    input  logic        osd_flip,       // OSD Orientation "Flipped": 180 degrees on top of the game's flip
     input  logic        test_pattern,
     input  logic        dbg_overlay,
 
@@ -134,7 +135,7 @@ module rshark_core (
     rshark_video video (
         .clk(clk), .rst(reset), .ce_pix(ce_pix), .hcount(hcount), .vcount(vcount), .line_start(line_start),
         .hblank_in(hb), .vblank_in(vb), .hsync_in(hs), .vsync_in(vs),
-        .regs(tm_regs), .bg1_pri(bg1_pri), .flip(flip),
+        .regs(tm_regs), .bg1_pri(bg1_pri), .flip(flip), .osd_flip(osd_flip),
         .vblank_evt(irq5_evt), .pal_we(pal_we), .pal_addr(pal_addr), .pal_wdata(pal_wdata),
         .ytab_addr(ytab_addr), .ytab_data(ytab_data), .atab_addr(atab_addr), .atab_data(atab_data),
         .tm_req(tm_req), .tm_addr(tm_addr), .tm_ack(tm_ack),

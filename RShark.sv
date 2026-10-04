@@ -58,8 +58,7 @@ localparam CONF_STR = {
 	"RShark;;",
 	"-;",
 	"O[122:121],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"O[1],Orientation,Vert,Horz;",
-	"O[3],Rotate CCW/CW,CCW,CW;",
+	"O[6:5],Orientation,Vertical CCW,Vertical CW,Horizontal,Flipped;",
 	"O[12:11],Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
 	"-;",
 	"DIP;",
@@ -179,6 +178,7 @@ rshark_core core
 	.sd_ready(sd_ready),
 	.joy0(joystick_0),
 	.joy1(joystick_1),
+	.osd_flip(osd_flip),
 	.test_pattern(status[4]),
 	.dbg_overlay(status[2]),
 	.ce_pix(ce_pix),
@@ -282,9 +282,21 @@ rshark_crt_adjust #(.SYS_HZ(94_371_840), .PIX_DIV(12), .HTOTAL(512), .VTOTAL(256
 	.active()
 );
 
-wire no_rotate = status[1] | direct_video;
-wire rotate_ccw = ~status[3];
-wire flip = 1'b0;
+// Orientation (one selector, as in the Namco NA-1/NA-2 core). "Horizontal" is the raster as the
+// board generates it (sideways, for a rotated CRT or a tate display); Vertical CCW/CW rotate it
+// 90 degrees in the HDMI framebuffer (CCW = upright on a normal TV, the default); Flipped turns
+// the raster 180 degrees inside the renderer, so it applies to the native output as well.
+//
+//   orient  OSD label     native/CRT   HDMI/scaler    no_rotate  rotate_ccw  osd_flip
+//   00      Vertical CCW  raster       raster rot CCW 0          1           0
+//   01      Vertical CW   raster       raster rot CW  0          0           0
+//   10      Horizontal    raster       raster         1          x           0
+//   11      Flipped       raster 180   raster 180     1          x           1
+wire [1:0] orient = status[6:5];
+wire osd_flip = (orient == 2'd3);
+wire no_rotate = orient[1] | direct_video;
+wire rotate_ccw = (orient == 2'd0);
+wire flip = 1'b0;                   // native flip is applied upstream (osd_flip)
 wire video_rotated;
 screen_rotate screen_rotate (.*);
 

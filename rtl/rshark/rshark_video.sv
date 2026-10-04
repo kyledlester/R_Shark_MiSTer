@@ -22,6 +22,7 @@ module rshark_video (
     input  logic [255:0] regs,
     input  logic         bg1_pri,
     input  logic         flip,              // control byte bit 0 (MAME flip_screen)
+    input  logic         osd_flip,          // OSD 180-degree rotation of the finished picture
 
     // palette CPU write port (shadow palette; copied to the display palette at vblank_evt)
     input  logic         vblank_evt,        // line 248 (with the sprite copy and register latch)
@@ -59,6 +60,11 @@ module rshark_video (
     logic      render_half;           // line-buffer half = parity of the display line
     logic      tm_busy, sp_busy;
 
+    // OSD flip takes effect at a frame boundary (no torn frame when it is changed); raster-driven,
+    // so it also changes while the game is paused.
+    logic oflip = 1'b0;
+    always_ff @(posedge clk) if (line_start && next_line == 8'd0) oflip <= osd_flip;
+
     // An engine still busy at the next line start is aborted (reset) one clock before it restarts.
     always_ff @(posedge clk) begin
         render_start <= 1'b0;
@@ -73,8 +79,9 @@ module rshark_video (
                 end
                 render_pend <= 1'b1;
                 // Flip screen (MAME tilemap set_flip_all + draw_sprites flip branch): display
-                // line y shows logical line 255 - y; see the read addresses below for x.
-                render_y    <= flip ? 8'd255 - next_line : next_line;
+                // line y shows logical line 255 - y; see the read addresses below for x. The OSD
+                // flip is a further 180 degrees of that picture, so the two compose as an XOR.
+                render_y    <= (flip ^ oflip) ? 8'd255 - next_line : next_line;
                 render_half <= next_line[0];
             end
             render_start <= render_pend;
@@ -169,8 +176,10 @@ module rshark_video (
         if (ce_pix) begin
             // flipped: tiles mirror around the visible centre (x -> 511 - x); MAME's flipped
             // sprite formula sx = 498 - 16*w - sx lands them 2 dots further (x -> 513 - x)
-            rd_x   <= flip ? 9'd511 - hcount : hcount;
-            rd_sx  <= flip ? 9'd513 - hcount : hcount;
+            // OSD flip mirrors the dot first (x -> 511 - x), then the game's flip applies to it:
+            // sprites land at 513 - (511 - x) = x + 2 when both are on.
+            rd_x   <= (flip ^ oflip) ? 9'd511 - hcount : hcount;
+            rd_sx  <= flip ? (oflip ? hcount + 9'd2 : 9'd513 - hcount) : (oflip ? 9'd511 - hcount : hcount);
             ph     <= 4'd1;
             vis_d1 <= !hblank_in && !vblank_in;
             // present the colour computed for the previous dot, with the previous dot's timing
